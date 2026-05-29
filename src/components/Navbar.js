@@ -1,5 +1,6 @@
 // ─────────────────────────────────────────────────
-//  Navbar.js  –  Top navigation bar
+//  Navbar.js
+//  src/components/Navbar.js
 // ─────────────────────────────────────────────────
 
 import React, { useState } from "react";
@@ -7,8 +8,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Navbar() {
-  const { currentUser, loginWithGoogle, logout } = useAuth();
-  const navigate   = useNavigate();
+  const { currentUser, userRole, loginWithGoogle, logout } = useAuth();
+  const navigate  = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
   async function handleLogin() {
@@ -30,19 +31,40 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop nav links */}
+          {/* ── Desktop links ── */}
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/"          className="text-gray-600 hover:text-orange-500 font-medium transition-colors">Browse Messes</Link>
-            <Link to="/saved" className="text-gray-600 hover:text-orange-500 font-medium transition-colors">❤️ Saved</Link>
-            <Link to="/roommates" className="text-gray-600 hover:text-orange-500 font-medium transition-colors">Find Roommate</Link>
-            <Link
-              to="/post"
-              className="bg-orange-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors"
-            >
-              + Post a Mess
+
+            <Link to="/" className="text-gray-600 hover:text-orange-500 font-medium transition-colors">
+              Browse Messes
             </Link>
 
-            {/* Login / user avatar */}
+            <Link to="/saved" className="text-gray-600 hover:text-orange-500 font-medium transition-colors">
+              🔖 Saved
+            </Link>
+
+            <Link to="/roommates" className="text-gray-600 hover:text-orange-500 font-medium transition-colors">
+              Find Roommate
+            </Link>
+
+            {/* Owner-only links */}
+            {userRole === "owner" && (
+              <>
+                <Link
+                  to="/post"
+                  className="bg-orange-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                >
+                  + Post a Mess
+                </Link>
+                <Link
+                  to="/dashboard"
+                  className="flex items-center gap-1.5 text-gray-600 hover:text-orange-500 font-medium transition-colors"
+                >
+                  ⚙️ Dashboard
+                </Link>
+              </>
+            )}
+
+            {/* Auth section */}
             {currentUser ? (
               <div className="flex items-center gap-3">
                 <img
@@ -50,12 +72,17 @@ export default function Navbar() {
                   alt={currentUser.displayName}
                   className="w-8 h-8 rounded-full border-2 border-orange-200"
                 />
-                <button
-                  onClick={logout}
-                  className="text-sm text-gray-500 hover:text-red-500 transition-colors"
-                >
-                  Logout
-                </button>
+                <div className="flex flex-col items-start">
+                  <span className="text-xs text-gray-400 leading-none capitalize">
+                    {userRole ?? "…"}
+                  </span>
+                  <button
+                    onClick={logout}
+                    className="text-sm text-gray-500 hover:text-red-500 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
               </div>
             ) : (
               <button
@@ -67,7 +94,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile hamburger */}
+          {/* ── Mobile hamburger ── */}
           <button
             className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
             onClick={() => setMenuOpen(!menuOpen)}
@@ -76,18 +103,27 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Mobile menu */}
+        {/* ── Mobile menu ── */}
         {menuOpen && (
           <div className="md:hidden border-t border-gray-100 py-3 flex flex-col gap-3">
             <Link to="/"          className="text-gray-700 font-medium" onClick={() => setMenuOpen(false)}>Browse Messes</Link>
+            <Link to="/saved"     className="text-gray-700 font-medium" onClick={() => setMenuOpen(false)}>🔖 Saved</Link>
             <Link to="/roommates" className="text-gray-700 font-medium" onClick={() => setMenuOpen(false)}>Find Roommate</Link>
-            <Link to="/post"      className="text-orange-500 font-medium" onClick={() => setMenuOpen(false)}>+ Post a Mess</Link>
+
+            {userRole === "owner" && (
+              <>
+                <Link to="/post"      className="text-orange-500 font-medium" onClick={() => setMenuOpen(false)}>+ Post a Mess</Link>
+                <Link to="/dashboard" className="text-gray-700 font-medium"   onClick={() => setMenuOpen(false)}>⚙️ Dashboard</Link>
+              </>
+            )}
+
             {currentUser
               ? <button onClick={logout} className="text-left text-red-500 font-medium">Logout</button>
               : <button onClick={handleLogin} className="text-left text-gray-700 font-medium">🔐 Login with Google</button>
             }
           </div>
         )}
+
       </div>
     </nav>
   );
