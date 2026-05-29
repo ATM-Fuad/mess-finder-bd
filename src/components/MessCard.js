@@ -4,8 +4,10 @@
 //  Props it receives:
 //    mess  →  one mess object from Firestore
 
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { doc, setDoc, deleteDoc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
+import { useAuth } from "../contexts/AuthContext";import { Link } from "react-router-dom";
 
 // Icons for facilities
 const FACILITY_ICONS = {
@@ -18,7 +20,32 @@ const FACILITY_ICONS = {
 };
 
 export default function MessCard({ mess }) {
-  const {
+  const { currentUser } = useAuth();
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    async function checkSaved() {
+      if (!currentUser) return;
+      const ref = doc(db, "users", currentUser.uid, "saved", mess.id);
+      const snap = await getDoc(ref);
+      setSaved(snap.exists());
+    }
+    checkSaved();
+  }, [currentUser, mess.id]);
+
+  async function toggleSave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!currentUser) { alert("Please login to save messes!"); return; }
+    const ref = doc(db, "users", currentUser.uid, "saved", mess.id);
+    if (saved) {
+      await deleteDoc(ref);
+      setSaved(false);
+    } else {
+      await setDoc(ref, { mess_id: mess.id, saved_at: new Date() });
+      setSaved(true);
+    }
+  }  const {
     id, name, city, university, rent,
     seats_available, gender, facilities = [],
     photos = [], rating, review_count = 0,
@@ -49,6 +76,12 @@ export default function MessCard({ mess }) {
         />
 
         {/* Vacancy badge */}
+        <button
+  onClick={toggleSave}
+  className="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-white shadow-md flex items-center justify-center text-lg hover:scale-110 transition-transform"
+>
+  {saved ? "❤️" : "🤍"}
+</button>
         <div className={`absolute top-3 left-3 text-xs font-semibold px-2 py-1 rounded-full ${seats_available > 0 ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
           {seats_available > 0 ? `${seats_available} seat${seats_available > 1 ? "s" : ""} available` : "Full"}
         </div>
