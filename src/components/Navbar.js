@@ -33,6 +33,7 @@ export default function Navbar() {
           {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-6">
             <Link to="/"          className="text-gray-600 hover:text-orange-500 font-medium transition-colors">Browse Messes</Link>
+            <Link to="/saved" className="text-gray-600 hover:text-orange-500 font-medium transition-colors">❤️ Saved</Link>
             <Link to="/roommates" className="text-gray-600 hover:text-orange-500 font-medium transition-colors">Find Roommate</Link>
             <Link
               to="/post"

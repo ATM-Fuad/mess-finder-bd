@@ -14,6 +14,7 @@ import PostMess    from "./pages/PostMess";
 import MessDetail  from "./pages/MessDetail";
 import Login       from "./pages/Login";
 import RoommateBoard from "./pages/RoommateBoard";
+import SavedMesses from "./pages/SavedMesses";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
               <Route path="/mess/:id"  element={<MessDetail />} />
               <Route path="/login"     element={<Login />} />
               <Route path="/roommates" element={<RoommateBoard />} />
+              <Route path="/saved" element={<SavedMesses />} />
             </Routes>
           </main>
         </div>
