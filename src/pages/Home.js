@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────
 
 import React, { useEffect, useState } from "react";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { collection, getDocs, query } from "firebase/firestore";
 import { db } from "../firebase";
 import MessCard from "../components/MessCard";
 import { Link } from "react-router-dom";
