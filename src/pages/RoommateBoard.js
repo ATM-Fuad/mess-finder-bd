@@ -305,7 +305,6 @@ function RoommateCard({ post, onClick }) {
 
 // ── Post Form ─────────────────────────────────────
 function PostForm({ onSubmit, onCancel, submitting }) {
-  const { currentUser: _currentUser } = useAuth();
   const [form, setForm] = useState({
     listingType:"roommate", area:"", mapsURL:"",
     budget:"", gender:"male", personsPerRoom:"1",
