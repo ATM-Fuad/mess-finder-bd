@@ -53,28 +53,26 @@ export default function Dashboard() {
   const [togglingId,    setTogglingId]    = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null); // id of listing pending confirm
 
-  // ── Fetch owner's listings ────────────────────
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-useEffect(() => {
-  if (!currentUser) return;
-  fetchListings();
-}, [currentUser]);
-
-  async function fetchListings() {
-    setLoadingData(true);
-    try {
-      const q = query(
-        collection(db, "messes"),
-        where("ownerId", "==", currentUser.uid)
-      );
-      const snap = await getDocs(q);
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setListings(data);
-    } catch (err) {
-      console.error("fetchListings error:", err);
+// ── Fetch owner's listings ────────────────────
+  useEffect(() => {
+    if (!currentUser) return;
+    async function fetchListings() {
+      setLoadingData(true);
+      try {
+        const q = query(
+          collection(db, "messes"),
+          where("ownerId", "==", currentUser.uid)
+        );
+        const snap = await getDocs(q);
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setListings(data);
+      } catch (err) {
+        console.error("fetchListings error:", err);
+      }
+      setLoadingData(false);
     }
-    setLoadingData(false);
-  }
+    fetchListings();
+  }, [currentUser]);
 
   // ── Derived metrics ───────────────────────────
   const totalListings      = listings.length;
