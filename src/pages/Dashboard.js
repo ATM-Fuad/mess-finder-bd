@@ -8,10 +8,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  collection, query, where, getDocs,
-  doc, deleteDoc, updateDoc, increment
-} from "firebase/firestore";
+import { collection, query, where, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -57,10 +54,11 @@ export default function Dashboard() {
   const [confirmDelete, setConfirmDelete] = useState(null); // id of listing pending confirm
 
   // ── Fetch owner's listings ────────────────────
-  useEffect(() => {
-    if (!currentUser) return;
-    fetchListings();
-  }, [currentUser]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+useEffect(() => {
+  if (!currentUser) return;
+  fetchListings();
+}, [currentUser]);
 
   async function fetchListings() {
     setLoadingData(true);
