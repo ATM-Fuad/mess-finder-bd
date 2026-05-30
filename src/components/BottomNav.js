@@ -12,7 +12,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 
 export default function BottomNav() {
-  const { currentUser: _currentUser } = useAuth();
+  const { userRole } = useAuth();
   const { t } = useLanguage();
   const location = useLocation();
 
