@@ -10,7 +10,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   collection, query, where, getDocs,
-  doc, deleteDoc, updateDoc, increment
+  doc, deleteDoc, updateDoc
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
@@ -171,26 +171,25 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!currentUser) return;
+    async function fetchListings() {
+      setLoadingData(true);
+      try {
+        if (isOwner) {
+          const q = query(collection(db, "messes"),
+            where("ownerId", "==", currentUser.uid));
+          const snap = await getDocs(q);
+          setListings(snap.docs.map(d => ({ id:d.id, ...d.data() })));
+        } else if (isFinder) {
+          const q = query(collection(db, "roommate_requests"),
+            where("user_id", "==", currentUser.uid));
+          const snap = await getDocs(q);
+          setListings(snap.docs.map(d => ({ id:d.id, ...d.data() })));
+        }
+      } catch (err) { console.error("fetchListings:", err); }
+      setLoadingData(false);
+    }
     fetchListings();
-  }, [currentUser, userRole]);
-
-  async function fetchListings() {
-    setLoadingData(true);
-    try {
-      if (isOwner) {
-        const q = query(collection(db, "messes"),
-          where("ownerId", "==", currentUser.uid));
-        const snap = await getDocs(q);
-        setListings(snap.docs.map(d => ({ id:d.id, ...d.data() })));
-      } else if (isFinder) {
-        const q = query(collection(db, "roommate_requests"),
-          where("user_id", "==", currentUser.uid));
-        const snap = await getDocs(q);
-        setListings(snap.docs.map(d => ({ id:d.id, ...d.data() })));
-      }
-    } catch (err) { console.error("fetchListings:", err); }
-    setLoadingData(false);
-  }
+  }, [currentUser, userRole, isOwner, isFinder]);
 
   // Metrics
   const totalListings = listings.length;
