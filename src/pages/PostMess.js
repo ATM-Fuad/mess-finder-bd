@@ -134,7 +134,6 @@ export default function PostMess() {
 
     // ── BUG FIX: setSubmitting wraps entire try/finally ──
     setSubmitting(true);
-    let docId = null;
 
     try {
       const seatsAvailable = Number(form.seats_available) || 0;
@@ -171,8 +170,6 @@ export default function PostMess() {
         owner_name:      currentUser?.displayName ?? "Owner",
         created_at:      serverTimestamp(),
       });
-
-      docId = docRef.id;
 
       // Upload photos if any
       if (photos.length > 0) {
