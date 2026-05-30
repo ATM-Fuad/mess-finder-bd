@@ -1,10 +1,5 @@
 // ─────────────────────────────────────────────────
 //  PostRoommate.js
-//  BUG FIX: Submit no longer freezes.
-//  - setSubmitting(false) in finally block
-//  - Toast shown on success
-//  - navigate("/dashboard") fires after 1.5s
-//  - All fields null-safe with optional chaining
 // ─────────────────────────────────────────────────
 
 import React, { useState } from "react";
@@ -18,14 +13,14 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 
 const FACILITIES = [
-  { id:"wifi",     icon:"📶", label:"WiFi" },
-  { id:"ac",       icon:"❄️",  label:"AC" },
-  { id:"meals",    icon:"🍱", label:"Meals" },
-  { id:"bathroom", icon:"🚿", label:"Attached Bath" },
-  { id:"parking",  icon:"🏍️", label:"Parking" },
-  { id:"cctv",     icon:"📹", label:"CCTV" },
-  { id:"laundry",  icon:"👕", label:"Laundry" },
-  { id:"generator",icon:"⚡", label:"Generator" },
+  { id:"wifi",      icon:"📶", label:"WiFi" },
+  { id:"ac",        icon:"❄️",  label:"AC" },
+  { id:"meals",     icon:"🍱", label:"Meals" },
+  { id:"bathroom",  icon:"🚿", label:"Attached Bath" },
+  { id:"parking",   icon:"🏍️", label:"Parking" },
+  { id:"cctv",      icon:"📹", label:"CCTV" },
+  { id:"laundry",   icon:"👕", label:"Laundry" },
+  { id:"generator", icon:"⚡", label:"Generator" },
 ];
 
 const LOCATIONS = {
@@ -52,8 +47,8 @@ function parseGoogleMapsURL(url) {
 
 function Toast({ message }) {
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[999] bg-green-500 text-white px-6 py-3 rounded-2xl shadow-xl font-semibold text-sm flex items-center gap-2 animate-bounce">
-      {message}
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[999] bg-green-500 text-white px-6 py-3 rounded-2xl shadow-xl font-semibold text-sm flex items-center gap-2">
+      ✅ {message}
     </div>
   );
 }
@@ -98,7 +93,7 @@ export default function PostRoommate() {
   }
 
   function handlePhotos(e) {
-    const files = Array.from(e.target.files).slice(0,4);
+    const files = Array.from(e.target.files).slice(0, 4);
     setPhotos(files);
     setPreviews(files.map(f => URL.createObjectURL(f)));
   }
@@ -115,7 +110,8 @@ export default function PostRoommate() {
 
     const finalArea = form.area === "other" ? form.customArea?.trim() : form.area;
     if (!form.budget || !form.contact?.trim()) {
-      setError("Budget and phone number are required."); return;
+      setError("Budget and phone number are required.");
+      return;
     }
     if (!currentUser) { setError("Please log in first."); return; }
 
@@ -124,6 +120,7 @@ export default function PostRoommate() {
     try {
       const coords = parseGoogleMapsURL(form.mapsURL);
 
+      // ── Step 1: Write Firestore document ──
       const docRef = await addDoc(collection(db, "roommate_requests"), {
         listingType:    form.listingType,
         division:       form.division,
@@ -147,28 +144,32 @@ export default function PostRoommate() {
         created_at:     serverTimestamp(),
       });
 
-      // Upload photos
+      // ── Step 2: Upload photos (best-effort, won't block redirect) ──
       if (photos.length > 0) {
-        const urls = await Promise.all(photos.map((f,i) => uploadPhoto(f, docRef.id, i)));
-        await updateDoc(doc(db, "roommate_requests", docRef.id), { photos: urls });
+        try {
+          const urls = await Promise.all(
+            photos.map((f, i) => uploadPhoto(f, docRef.id, i))
+          );
+          await updateDoc(doc(db, "roommate_requests", docRef.id), { photos: urls });
+        } catch (uploadErr) {
+          // Photo upload failed — listing is still posted, just without photos
+          console.warn("Photo upload failed (listing still saved):", uploadErr);
+        }
       }
 
-      // ── BUG FIX: toast then navigate ──
+      // ── Step 3: Unlock form, show toast, redirect ──
+      setSubmitting(false);
       setToast("Ad Posted Successfully! 🎉");
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1500);
+      setTimeout(() => navigate("/dashboard"), 1500);
 
     } catch (err) {
       console.error("PostRoommate submit error:", err);
-      setError("Something went wrong. Please try again. Error: " + (err?.message ?? "unknown"));
-    } finally {
-      // ── BUG FIX: always unlock the button ──
+      setError("Something went wrong. Please try again. (" + (err?.message ?? "unknown error") + ")");
       setSubmitting(false);
     }
   }
 
-  // Access denied for owners
+  // ── Access guards ──
   if (currentUser && userRole === "owner") {
     return (
       <div className="max-w-md mx-auto text-center py-20">
@@ -198,8 +199,8 @@ export default function PostRoommate() {
     );
   }
 
-  const inputCls = "w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400 bg-white dark:bg-slate-700 text-gray-900 dark:text-white transition-colors";
-  const labelCls = "text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1";
+  const inputCls   = "w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400 bg-white dark:bg-slate-700 text-gray-900 dark:text-white transition-colors";
+  const labelCls   = "text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1";
   const sectionCls = "bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors";
 
   return (
@@ -228,7 +229,7 @@ export default function PostRoommate() {
           </div>
         </div>
 
-        {/* Location — 3-tier */}
+        {/* Location */}
         <div className={sectionCls}>
           <div>
             <h2 className="font-semibold text-gray-800 dark:text-white">📍 Location</h2>

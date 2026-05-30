@@ -1,10 +1,5 @@
 // ─────────────────────────────────────────────────
 //  PostMess.js
-//  BUG FIX: Submit no longer freezes.
-//  - setSubmitting(false) always runs in finally
-//  - navigate("/dashboard") fires after success
-//  - Toast banner shown on success
-//  - All fields null-safe with optional chaining
 // ─────────────────────────────────────────────────
 
 import React, { useState } from "react";
@@ -50,11 +45,10 @@ function parseGoogleMapsURL(url) {
   return null;
 }
 
-// ── Toast banner ──────────────────────────────────
 function Toast({ message }) {
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[999] bg-green-500 text-white px-6 py-3 rounded-2xl shadow-xl font-semibold text-sm flex items-center gap-2 animate-bounce">
-      {message}
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[999] bg-green-500 text-white px-6 py-3 rounded-2xl shadow-xl font-semibold text-sm flex items-center gap-2">
+      ✅ {message}
     </div>
   );
 }
@@ -128,17 +122,18 @@ export default function PostMess() {
     const finalArea = form.area === "other" ? form.customArea?.trim() : form.area;
 
     if (!form.name?.trim() || !form.division || !form.district || !form.rent || !form.contact_phone?.trim()) {
-      setError("Please fill in: Mess name, Division, District, Rent, and Phone."); return;
+      setError("Please fill in: Mess name, Division, District, Rent, and Phone.");
+      return;
     }
     if (!currentUser) { setError("Please log in first."); return; }
 
-    // ── BUG FIX: setSubmitting wraps entire try/finally ──
     setSubmitting(true);
 
     try {
       const seatsAvailable = Number(form.seats_available) || 0;
       const coords = parseGoogleMapsURL(form.mapsURL);
 
+      // ── Step 1: Write Firestore document ──
       const docRef = await addDoc(collection(db, "messes"), {
         title:           form.name.trim(),
         name:            form.name.trim(),
@@ -171,30 +166,32 @@ export default function PostMess() {
         created_at:      serverTimestamp(),
       });
 
-      // Upload photos if any
+      // ── Step 2: Upload photos if any (best-effort, won't block redirect) ──
       if (photos.length > 0) {
-        const photoURLs = await Promise.all(
-          photos.map((file, i) => uploadPhoto(file, docRef.id, i))
-        );
-        await updateDoc(doc(db, "messes", docRef.id), { photos: photoURLs });
+        try {
+          const photoURLs = await Promise.all(
+            photos.map((file, i) => uploadPhoto(file, docRef.id, i))
+          );
+          await updateDoc(doc(db, "messes", docRef.id), { photos: photoURLs });
+        } catch (uploadErr) {
+          // Photo upload failed — listing is still posted, just without photos
+          console.warn("Photo upload failed (listing still saved):", uploadErr);
+        }
       }
 
-      // ── BUG FIX: show toast THEN navigate ──
+      // ── Step 3: Unlock form, show toast, redirect ──
+      setSubmitting(false);
       setToast("Ad Posted Successfully! 🎉");
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1500);
+      setTimeout(() => navigate("/dashboard"), 1500);
 
     } catch (err) {
       console.error("PostMess submit error:", err);
-      setError("Something went wrong. Please try again. Error: " + (err?.message ?? "unknown"));
-    } finally {
-      // ── BUG FIX: always release the submitting lock ──
+      setError("Something went wrong. Please try again. (" + (err?.message ?? "unknown error") + ")");
       setSubmitting(false);
     }
   }
 
-  // Access denied for finders
+  // ── Access guards ──
   if (currentUser && userRole === "finder") {
     return (
       <div className="max-w-md mx-auto text-center py-20">
@@ -237,7 +234,7 @@ export default function PostMess() {
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* Basic Info */}
-        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4">
+        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors">
           <h2 className="font-semibold text-gray-800 dark:text-white">📋 Basic information</h2>
           <div>
             <label className="label">Mess name *</label>
@@ -252,7 +249,7 @@ export default function PostMess() {
         </section>
 
         {/* Location */}
-        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4">
+        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors">
           <div>
             <h2 className="font-semibold text-gray-800 dark:text-white">📍 Location</h2>
             <p className="text-xs text-gray-400 mt-0.5">Division → District → Area</p>
@@ -311,7 +308,7 @@ export default function PostMess() {
         </section>
 
         {/* Rent & Seats */}
-        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4">
+        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors">
           <h2 className="font-semibold text-gray-800 dark:text-white">💰 Rent & seats</h2>
           <div className="grid grid-cols-3 gap-4">
             <div>
@@ -345,7 +342,7 @@ export default function PostMess() {
         </section>
 
         {/* Facilities */}
-        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5">
+        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 transition-colors">
           <h2 className="font-semibold text-gray-800 dark:text-white mb-3">🏠 Facilities</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {FACILITIES_LIST.map(f => (
@@ -362,7 +359,7 @@ export default function PostMess() {
         </section>
 
         {/* Photos */}
-        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5">
+        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 transition-colors">
           <h2 className="font-semibold text-gray-800 dark:text-white mb-1">📸 Photos (up to 5)</h2>
           <p className="text-xs text-gray-400 mb-3">Messes with photos get 4× more inquiries</p>
           <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-6 cursor-pointer hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all">
@@ -381,7 +378,7 @@ export default function PostMess() {
         </section>
 
         {/* Contact */}
-        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4">
+        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors">
           <h2 className="font-semibold text-gray-800 dark:text-white">📞 Contact</h2>
           <div>
             <label className="label">WhatsApp / Phone number *</label>
@@ -410,10 +407,9 @@ export default function PostMess() {
       </form>
 
       <style>{`
-        .label { display:block; font-size:.75rem; font-weight:500; color:#6B7280; margin-bottom:.25rem; }
+        .label { display:block; font-size:.75rem; font-weight:500; color:#6B7280; margin-bottom:.375rem; }
         .input { width:100%; border:1.5px solid #E5E7EB; border-radius:.75rem; padding:.6rem .875rem; font-size:.875rem; color:#111827; background:white; outline:none; transition:border-color .15s; }
         .input:focus { border-color:#F97316; }
-        @media (prefers-color-scheme: dark) { }
         .dark .input { background:#1e293b; border-color:#475569; color:#f1f5f9; }
         .dark .label { color:#94a3b8; }
       `}</style>
