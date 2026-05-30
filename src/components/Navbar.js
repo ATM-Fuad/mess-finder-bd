@@ -1,21 +1,45 @@
 // ─────────────────────────────────────────────────
-//  Navbar.js
-//  src/components/Navbar.js
+//  Navbar.js — with language toggle (Feature 8)
 // ─────────────────────────────────────────────────
 
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useRef, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../contexts/LanguageContext";
 
 export default function Navbar() {
   const { currentUser, userRole, loginWithGoogle, logout } = useAuth();
+  const { lang, toggleLang, t } = useLanguage();
   const navigate  = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const location  = useLocation();
+  const [menuOpen,   setMenuOpen]   = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    function handler(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => { setMenuOpen(false); setMobileOpen(false); }, [location]);
 
   async function handleLogin() {
     await loginWithGoogle();
     navigate("/");
   }
+
+  const navLinks = [
+    { to: "/",          label: `🏠 ${t("browseM")}` },
+    { to: "/saved",     label: `🔖 ${t("bookmarked")}` },
+    { to: "/roommates", label: `🤝 ${t("findRoommate")}` },
+    ...(userRole === "owner" ? [
+      { to: "/post",      label: `➕ ${t("postMess")}` },
+      { to: "/dashboard", label: `⚙️ ${t("dashboard")}` },
+    ] : []),
+  ];
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -23,7 +47,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 shrink-0">
             <span className="text-2xl">🏠</span>
             <span className="font-bold text-xl text-gray-900">
               Mess<span className="text-orange-500">Finder</span>
@@ -31,99 +55,108 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* ── Desktop links ── */}
-          <div className="hidden md:flex items-center gap-6">
+          {/* Desktop right side */}
+          <div className="hidden md:flex items-center gap-3">
 
-            <Link to="/" className="text-gray-600 hover:text-orange-500 font-medium transition-colors">
-              Browse Messes
-            </Link>
+            {/* Language toggle */}
+            <button
+              onClick={toggleLang}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 hover:border-orange-300 hover:text-orange-500 transition-all"
+            >
+              <span>{lang === "en" ? "EN" : "বাং"}</span>
+              <span className="text-gray-300">|</span>
+              <span className={lang === "en" ? "text-gray-400" : "text-gray-400"}>
+                {lang === "en" ? "বাংলা" : "EN"}
+              </span>
+            </button>
 
-            <Link to="/saved" className="text-gray-600 hover:text-orange-500 font-medium transition-colors">
-              🔖 Saved
-            </Link>
+            {/* Menu dropdown */}
+            <div ref={menuRef} className="relative">
+              <button
+                onClick={() => setMenuOpen(o => !o)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 font-medium text-sm transition-all
+                  ${menuOpen ? "border-orange-500 bg-orange-50 text-orange-600" : "border-gray-200 text-gray-600 hover:border-orange-300"}`}
+              >
+                <span>☰</span> {t("menu")}
+                <span className={`text-xs transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}>▼</span>
+              </button>
 
-            <Link to="/roommates" className="text-gray-600 hover:text-orange-500 font-medium transition-colors">
-              Find Roommate
-            </Link>
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden">
+                  {navLinks.map(link => (
+                    <Link key={link.to} to={link.to}
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors hover:bg-orange-50 hover:text-orange-600
+                        ${location.pathname === link.to ? "bg-orange-50 text-orange-600" : "text-gray-700"}`}>
+                      {link.label}
+                    </Link>
+                  ))}
+                  <div className="border-t border-gray-100 mt-2 pt-2">
+                    {currentUser
+                      ? <button onClick={logout} className="w-full text-left flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors">🚪 {t("logout")}</button>
+                      : <button onClick={handleLogin} className="w-full text-left flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors">🔐 {t("login")}</button>
+                    }
+                  </div>
+                </div>
+              )}
+            </div>
 
-            {/* Owner-only links */}
-            {userRole === "owner" && (
-              <>
-                <Link
-                  to="/post"
-                  className="bg-orange-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors"
-                >
-                  + Post a Mess
-                </Link>
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-1.5 text-gray-600 hover:text-orange-500 font-medium transition-colors"
-                >
-                  ⚙️ Dashboard
-                </Link>
-              </>
-            )}
-
-            {/* Auth section */}
-            {currentUser ? (
-              <div className="flex items-center gap-3">
+            {/* Avatar */}
+            {currentUser && (
+              <div className="flex items-center gap-2">
                 <img
-                  src={currentUser.photoURL || "https://ui-avatars.com/api/?name=" + currentUser.displayName}
+                  src={currentUser.photoURL || `https://ui-avatars.com/api/?name=${currentUser.displayName}`}
                   alt={currentUser.displayName}
-                  className="w-8 h-8 rounded-full border-2 border-orange-200"
+                  className="w-9 h-9 rounded-full border-2 border-orange-200 object-cover"
                 />
-                <div className="flex flex-col items-start">
-                  <span className="text-xs text-gray-400 leading-none capitalize">
-                    {userRole ?? "…"}
-                  </span>
-                  <button
-                    onClick={logout}
-                    className="text-sm text-gray-500 hover:text-red-500 transition-colors"
-                  >
-                    Logout
-                  </button>
+                <div className="flex flex-col leading-none">
+                  <span className="text-xs font-semibold text-gray-800 max-w-[80px] truncate">{currentUser.displayName?.split(" ")[0]}</span>
+                  <span className="text-[10px] text-gray-400 capitalize">{userRole ?? "…"}</span>
                 </div>
               </div>
-            ) : (
-              <button
-                onClick={handleLogin}
-                className="flex items-center gap-2 text-gray-600 hover:text-orange-500 font-medium transition-colors"
-              >
-                <span>🔐</span> Login
-              </button>
             )}
-          </div>
-
-          {/* ── Mobile hamburger ── */}
-          <button
-            className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            {menuOpen ? "✕" : "☰"}
-          </button>
-        </div>
-
-        {/* ── Mobile menu ── */}
-        {menuOpen && (
-          <div className="md:hidden border-t border-gray-100 py-3 flex flex-col gap-3">
-            <Link to="/"          className="text-gray-700 font-medium" onClick={() => setMenuOpen(false)}>Browse Messes</Link>
-            <Link to="/saved"     className="text-gray-700 font-medium" onClick={() => setMenuOpen(false)}>🔖 Saved</Link>
-            <Link to="/roommates" className="text-gray-700 font-medium" onClick={() => setMenuOpen(false)}>Find Roommate</Link>
 
             {userRole === "owner" && (
-              <>
-                <Link to="/post"      className="text-orange-500 font-medium" onClick={() => setMenuOpen(false)}>+ Post a Mess</Link>
-                <Link to="/dashboard" className="text-gray-700 font-medium"   onClick={() => setMenuOpen(false)}>⚙️ Dashboard</Link>
-              </>
+              <Link to="/post" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm">
+                + {lang === "en" ? "Post" : "পোস্ট"}
+              </Link>
             )}
+          </div>
 
-            {currentUser
-              ? <button onClick={logout} className="text-left text-red-500 font-medium">Logout</button>
-              : <button onClick={handleLogin} className="text-left text-gray-700 font-medium">🔐 Login with Google</button>
-            }
+          {/* Mobile right: lang toggle + hamburger */}
+          <div className="md:hidden flex items-center gap-2">
+            <button
+              onClick={toggleLang}
+              className="px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600"
+            >
+              {lang === "en" ? "বাং" : "EN"}
+            </button>
+            <button
+              className="p-2 rounded-xl text-gray-600 hover:bg-gray-100 transition-colors"
+              onClick={() => setMobileOpen(o => !o)}
+            >
+              {mobileOpen ? "✕" : "☰"}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile drawer */}
+        {mobileOpen && (
+          <div className="md:hidden border-t border-gray-100 py-3 flex flex-col gap-1 pb-4">
+            {navLinks.map(link => (
+              <Link key={link.to} to={link.to}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+                  ${location.pathname === link.to ? "bg-orange-50 text-orange-600" : "text-gray-700 hover:bg-gray-50"}`}>
+                {link.label}
+              </Link>
+            ))}
+            <div className="border-t border-gray-100 mt-2 pt-2">
+              {currentUser
+                ? <button onClick={logout} className="w-full text-left px-3 py-3 text-sm font-medium text-red-500">🚪 {t("logout")}</button>
+                : <button onClick={handleLogin} className="w-full text-left px-3 py-3 text-sm font-medium text-gray-700">🔐 {t("login")}</button>
+              }
+            </div>
           </div>
         )}
-
       </div>
     </nav>
   );
