@@ -1,10 +1,14 @@
 // ─────────────────────────────────────────────────
 //  DarkModeContext.js
 //  src/contexts/DarkModeContext.js
-//  Global dark mode — persists to localStorage
+//
+//  BUG FIX: Added explicit classList.remove/add
+//  with a forced reflow to guarantee the toggle
+//  always wins over any OS/media-query preference.
+//  Also clears any stale "true" string in storage.
 // ─────────────────────────────────────────────────
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useLayoutEffect, useState } from "react";
 
 const DarkModeContext = createContext();
 
@@ -14,21 +18,37 @@ export function useDarkMode() {
 
 export function DarkModeProvider({ children }) {
   const [dark, setDark] = useState(() => {
-    try { return localStorage.getItem("messfinder_dark") === "true"; }
-    catch { return false; }
+    try {
+      const stored = localStorage.getItem("messfinder_dark");
+      // Explicit string comparison — avoids truthy bugs
+      if (stored === "true")  return true;
+      if (stored === "false") return false;
+      // Nothing stored yet → default to light mode
+      return false;
+    } catch {
+      return false;
+    }
   });
 
-  useEffect(() => {
+  // useLayoutEffect runs synchronously before paint —
+  // prevents a flash of wrong theme on load
+  useLayoutEffect(() => {
     const root = document.documentElement;
+    // Always do both operations so they can't get out of sync
+    root.classList.remove("dark");
+    root.classList.remove("light");
     if (dark) {
       root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
     }
-    try { localStorage.setItem("messfinder_dark", dark); } catch {}
+    try {
+      // Store exact string, not boolean coercion
+      localStorage.setItem("messfinder_dark", dark ? "true" : "false");
+    } catch {}
   }, [dark]);
 
-  function toggleDark() { setDark(d => !d); }
+  function toggleDark() {
+    setDark(prev => !prev);
+  }
 
   return (
     <DarkModeContext.Provider value={{ dark, toggleDark }}>

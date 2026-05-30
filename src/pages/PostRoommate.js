@@ -1,12 +1,17 @@
 // ─────────────────────────────────────────────────
-//  PostRoommate.js  —  src/pages/PostRoommate.js
-//  Finder-only page to post a roommate/sublet listing
-//  Feature 2: Role-restricted (finder only)
-//  Feature 4: 3-tier area autofill
+//  PostRoommate.js
+//  BUG FIX: Submit no longer freezes.
+//  - setSubmitting(false) in finally block
+//  - Toast shown on success
+//  - navigate("/dashboard") fires after 1.5s
+//  - All fields null-safe with optional chaining
 // ─────────────────────────────────────────────────
 
 import React, { useState } from "react";
-import { collection, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import {
+  collection, addDoc, serverTimestamp,
+  doc, updateDoc
+} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
@@ -24,45 +29,14 @@ const FACILITIES = [
 ];
 
 const LOCATIONS = {
-  "Dhaka": {
-    "Dhaka City": ["Mirpur","Farmgate","Bashundhara","Uttara","Mohammadpur","Dhanmondi","Badda","Mohakhali","Tejgaon","Rampura","Banasree","Khilgaon"],
-    "Savar":      ["Jahangirnagar","Ashulia","Hemayetpur","Savar Bazar"],
-    "Gazipur":    ["Board Bazar","Tongi","Chowrasta","Joydebpur"],
-    "Narayanganj":["Siddhirganj","Fatullah","Rupganj"],
-  },
-  "Rajshahi": {
-    "Rajshahi City":["Binodpur","Kazla","Talaimari","Motihar","Sopura","New Market","Upashahar","Rajpara","Boalia","Shaheb Bazar"],
-    "Puthia":       ["Baneswar","Puthia Sadar"],
-    "Natore":       ["Natore Sadar","Singra"],
-  },
-  "Mymensingh": {
-    "Mymensingh City":["Sesh Mor","Kevalat Khan","Patgudam","Ganginarpar","Kewatkhali","Bypass","Chorpara","Notun Bazar"],
-    "Netrokona":      ["Netrokona Sadar","Mohonganj"],
-    "Jamalpur":       ["Jamalpur Sadar","Islampur"],
-  },
-  "Chittagong": {
-    "Chittagong City":["Chawkbazar","GEC Circle","Halishahar","Nasirabad","Agrabad","Pahartali","Oxygen","Muradpur","Sholoshahar"],
-    "Hathazari":      ["Hathazari Sadar","Fatehabad"],
-    "Patiya":         ["Patiya Sadar","Karnaphuli"],
-  },
-  "Sylhet": {
-    "Sylhet City":["Zindabazar","Subidbazar","Shibganj","Tilagarh","Akhalia","Ambarkhana","Majortila"],
-    "Moulvibazar":["Moulvibazar Sadar","Sreemangal"],
-    "Habiganj":   ["Habiganj Sadar","Chunarughat"],
-  },
-  "Khulna": {
-    "Khulna City":["Sonadanga","Boyra","Khalishpur","Rupsha","Daulatpur"],
-    "Jessore":    ["Jessore Sadar","Chaugachha"],
-  },
-  "Barisal": {
-    "Barisal City":["Natullabad","Rupatali","Sadar Road","Band Road"],
-    "Patuakhali": ["Patuakhali Sadar","Baufal"],
-  },
-  "Rangpur": {
-    "Rangpur City":["Modern More","Jahaj Company More","Lalbag","Dhap","Shapla Chottor"],
-    "Dinajpur":   ["Dinajpur Sadar","Birampur"],
-    "Kurigram":   ["Kurigram Sadar","Nageshwari"],
-  },
+  "Dhaka":      { "Dhaka City":["Mirpur","Farmgate","Bashundhara","Uttara","Mohammadpur","Dhanmondi","Badda","Mohakhali","Tejgaon","Rampura","Banasree","Khilgaon"],"Savar":["Jahangirnagar","Ashulia","Hemayetpur","Savar Bazar"],"Gazipur":["Board Bazar","Tongi","Chowrasta","Joydebpur"],"Narayanganj":["Siddhirganj","Fatullah","Rupganj"] },
+  "Rajshahi":   { "Rajshahi City":["Binodpur","Kazla","Talaimari","Motihar","Sopura","New Market","Upashahar","Rajpara","Boalia","Shaheb Bazar"],"Puthia":["Baneswar","Puthia Sadar"],"Natore":["Natore Sadar","Singra"] },
+  "Mymensingh": { "Mymensingh City":["Sesh Mor","Kevalat Khan","Patgudam","Ganginarpar","Kewatkhali","Bypass","Chorpara","Notun Bazar"],"Netrokona":["Netrokona Sadar","Mohonganj"],"Jamalpur":["Jamalpur Sadar","Islampur"] },
+  "Chittagong": { "Chittagong City":["Chawkbazar","GEC Circle","Halishahar","Nasirabad","Agrabad","Pahartali","Oxygen","Muradpur","Sholoshahar"],"Hathazari":["Hathazari Sadar","Fatehabad"],"Patiya":["Patiya Sadar","Karnaphuli"] },
+  "Sylhet":     { "Sylhet City":["Zindabazar","Subidbazar","Shibganj","Tilagarh","Akhalia","Ambarkhana","Majortila"],"Moulvibazar":["Moulvibazar Sadar","Sreemangal"],"Habiganj":["Habiganj Sadar","Chunarughat"] },
+  "Khulna":     { "Khulna City":["Sonadanga","Boyra","Khalishpur","Rupsha","Daulatpur"],"Jessore":["Jessore Sadar","Chaugachha"] },
+  "Barisal":    { "Barisal City":["Natullabad","Rupatali","Sadar Road","Band Road"],"Patuakhali":["Patuakhali Sadar","Baufal"] },
+  "Rangpur":    { "Rangpur City":["Modern More","Jahaj Company More","Lalbag","Dhap","Shapla Chottor"],"Dinajpur":["Dinajpur Sadar","Birampur"],"Kurigram":["Kurigram Sadar","Nageshwari"] },
 };
 
 function parseGoogleMapsURL(url) {
@@ -74,6 +48,14 @@ function parseGoogleMapsURL(url) {
     if (b) return { lat:parseFloat(b[1]), lng:parseFloat(b[2]) };
   } catch {}
   return null;
+}
+
+function Toast({ message }) {
+  return (
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[999] bg-green-500 text-white px-6 py-3 rounded-2xl shadow-xl font-semibold text-sm flex items-center gap-2 animate-bounce">
+      {message}
+    </div>
+  );
 }
 
 export default function PostRoommate() {
@@ -89,31 +71,29 @@ export default function PostRoommate() {
   const [previews,   setPreviews]   = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState("");
-  const [successId,  setSuccessId]  = useState(null);
+  const [toast,      setToast]      = useState("");
   const [mapsOk,     setMapsOk]     = useState(false);
 
   const divisions = Object.keys(LOCATIONS);
-  const districts = form.division ? Object.keys(LOCATIONS[form.division]) : [];
-  const areas     = form.district ? LOCATIONS[form.division]?.[form.district] ?? [] : [];
+  const districts = form.division ? Object.keys(LOCATIONS[form.division] ?? {}) : [];
+  const areas     = form.district ? (LOCATIONS[form.division]?.[form.district] ?? []) : [];
 
-  function set(field, val) { setForm(p => ({ ...p, [field]:val })); }
+  function set(field, val) { setForm(p => ({...p, [field]:val})); }
 
   function handleChange(e) {
     const { name, value } = e.target;
     if (name === "division") { setForm(p => ({...p, division:value, district:"", area:"", customArea:""})); return; }
     if (name === "district") { setForm(p => ({...p, district:value, area:"", customArea:""})); return; }
-    if (name === "mapsURL")  {
-      setForm(p => ({...p, mapsURL:value}));
-      setMapsOk(!!parseGoogleMapsURL(value));
-      return;
-    }
+    if (name === "mapsURL")  { setForm(p => ({...p, mapsURL:value})); setMapsOk(!!parseGoogleMapsURL(value)); return; }
     setForm(p => ({...p, [name]:value}));
   }
 
   function toggleFacility(id) {
     setForm(p => ({
       ...p,
-      facilities: p.facilities.includes(id) ? p.facilities.filter(f=>f!==id) : [...p.facilities, id],
+      facilities: p.facilities.includes(id)
+        ? p.facilities.filter(f => f !== id)
+        : [...p.facilities, id],
     }));
   }
 
@@ -132,46 +112,63 @@ export default function PostRoommate() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    const finalArea = form.area === "other" ? form.customArea : form.area;
-    if (!form.budget || !form.contact) { setError("Budget and phone number are required."); return; }
+
+    const finalArea = form.area === "other" ? form.customArea?.trim() : form.area;
+    if (!form.budget || !form.contact?.trim()) {
+      setError("Budget and phone number are required."); return;
+    }
     if (!currentUser) { setError("Please log in first."); return; }
+
     setSubmitting(true);
+
     try {
       const coords = parseGoogleMapsURL(form.mapsURL);
+
       const docRef = await addDoc(collection(db, "roommate_requests"), {
-        listingType:   form.listingType,
-        division:      form.division,
-        district:      form.district,
-        city:          form.district,
-        area:          finalArea,
-        mapsURL:       form.mapsURL || null,
-        coordinates:   coords || null,
-        budget:        Number(form.budget),
-        gender:        form.gender,
-        personsPerRoom:form.personsPerRoom,
-        roomSize:      form.roomSize,
-        facilities:    form.facilities,
-        message:       form.message,
-        contact:       form.contact,
-        photos:        [],
-        views:         0,
-        user_name:     currentUser?.displayName ?? "Anonymous",
-        user_photo:    currentUser?.photoURL ?? null,
-        user_id:       currentUser.uid,
-        created_at:    serverTimestamp(),
+        listingType:    form.listingType,
+        division:       form.division,
+        district:       form.district,
+        city:           form.district,
+        area:           finalArea ?? "",
+        mapsURL:        form.mapsURL || null,
+        coordinates:    coords || null,
+        budget:         Number(form.budget),
+        gender:         form.gender,
+        personsPerRoom: form.personsPerRoom,
+        roomSize:       form.roomSize,
+        facilities:     form.facilities,
+        message:        form.message?.trim() ?? "",
+        contact:        form.contact.trim(),
+        photos:         [],
+        views:          0,
+        user_name:      currentUser?.displayName ?? "Anonymous",
+        user_photo:     currentUser?.photoURL ?? null,
+        user_id:        currentUser.uid,
+        created_at:     serverTimestamp(),
       });
+
+      // Upload photos
       if (photos.length > 0) {
         const urls = await Promise.all(photos.map((f,i) => uploadPhoto(f, docRef.id, i)));
         await updateDoc(doc(db, "roommate_requests", docRef.id), { photos: urls });
       }
-      setSuccessId(docRef.id);
+
+      // ── BUG FIX: toast then navigate ──
+      setToast("Ad Posted Successfully! 🎉");
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1500);
+
     } catch (err) {
-      console.error(err);
-      setError("Something went wrong. Please try again.");
-    } finally { setSubmitting(false); }
+      console.error("PostRoommate submit error:", err);
+      setError("Something went wrong. Please try again. Error: " + (err?.message ?? "unknown"));
+    } finally {
+      // ── BUG FIX: always unlock the button ──
+      setSubmitting(false);
+    }
   }
 
-  // ── Access denied for owners ──────────────────
+  // Access denied for owners
   if (currentUser && userRole === "owner") {
     return (
       <div className="max-w-md mx-auto text-center py-20">
@@ -193,7 +190,7 @@ export default function PostRoommate() {
       <div className="max-w-md mx-auto text-center py-20">
         <div className="text-5xl mb-4">🔐</div>
         <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Login required</h2>
-        <p className="text-gray-500 mb-6">Please log in to post a roommate request.</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-6">Please log in to post a roommate request.</p>
         <button onClick={loginWithGoogle} className="bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors">
           Login with Google
         </button>
@@ -201,31 +198,14 @@ export default function PostRoommate() {
     );
   }
 
-  if (successId) {
-    return (
-      <div className="max-w-md mx-auto text-center py-20">
-        <div className="text-6xl mb-4">🎉</div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Posted successfully!</h2>
-        <p className="text-gray-500 mb-8">Your roommate listing is live.</p>
-        <div className="flex flex-col gap-3">
-          <button onClick={() => navigate(`/roommate/${successId}`)}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
-            View my listing →
-          </button>
-          <button onClick={() => navigate("/dashboard")}
-            className="border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 px-6 py-3 rounded-xl font-medium transition-colors hover:bg-gray-50 dark:hover:bg-slate-700">
-            Go to Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const inputCls = "w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400 bg-white dark:bg-slate-700 text-gray-900 dark:text-white transition-colors";
   const labelCls = "text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1";
+  const sectionCls = "bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors";
 
   return (
     <div className="max-w-2xl mx-auto pb-28 md:pb-8">
+      {toast && <Toast message={toast} />}
+
       <div className="mb-6">
         <Link to="/roommates" className="text-sm text-gray-500 hover:text-orange-500 flex items-center gap-1 mb-3">← Back to Roommate Board</Link>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Post a Roommate Listing</h1>
@@ -235,7 +215,7 @@ export default function PostRoommate() {
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* Listing type */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors">
+        <div className={sectionCls}>
           <h2 className="font-semibold text-gray-800 dark:text-white">📋 Listing type</h2>
           <div className="flex gap-3">
             {[{val:"roommate",label:"🤝 Roommate Wanted"},{val:"sublet",label:"🏠 Sublet"}].map(opt => (
@@ -249,10 +229,10 @@ export default function PostRoommate() {
         </div>
 
         {/* Location — 3-tier */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors">
+        <div className={sectionCls}>
           <div>
             <h2 className="font-semibold text-gray-800 dark:text-white">📍 Location</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Select your division → district → area for accurate results.</p>
+            <p className="text-xs text-gray-400 mt-0.5">Division → District → Area</p>
           </div>
           <div>
             <label className={labelCls}>Division</label>
@@ -287,13 +267,13 @@ export default function PostRoommate() {
             <label className={labelCls}>Google Maps link <span className="text-gray-300 font-normal">(optional)</span></label>
             <input name="mapsURL" value={form.mapsURL} onChange={handleChange}
               placeholder="Paste Google Maps share link…" className={inputCls} />
-            {mapsOk && <p className="text-xs text-green-600 mt-1">✅ Location coordinates found</p>}
+            {mapsOk && <p className="text-xs text-green-600 dark:text-green-400 mt-1">✅ Location coordinates found</p>}
             <p className="text-xs text-gray-400 mt-1">📱 Google Maps → Share → Copy link</p>
           </div>
         </div>
 
-        {/* Budget, gender, persons, room size */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors">
+        {/* Preferences */}
+        <div className={sectionCls}>
           <h2 className="font-semibold text-gray-800 dark:text-white">💰 Preferences</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -316,7 +296,7 @@ export default function PostRoommate() {
                 {["1","2","3","4","5"].map(n => (
                   <button key={n} type="button" onClick={()=>set("personsPerRoom",n)}
                     className={`flex-1 py-2 rounded-lg text-sm font-semibold border-2 transition-all
-                      ${form.personsPerRoom===n?"border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600":"border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:border-orange-300"}`}>
+                      ${form.personsPerRoom===n?"border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600":"border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400"}`}>
                     {n}
                   </button>
                 ))}
@@ -328,7 +308,7 @@ export default function PostRoommate() {
                 {["small","medium","large"].map(s => (
                   <button key={s} type="button" onClick={()=>set("roomSize",s)}
                     className={`flex-1 py-2 rounded-lg text-xs font-semibold border-2 transition-all capitalize
-                      ${form.roomSize===s?"border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600":"border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:border-orange-300"}`}>
+                      ${form.roomSize===s?"border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600":"border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400"}`}>
                     {s}
                   </button>
                 ))}
@@ -346,7 +326,7 @@ export default function PostRoommate() {
                 ${form.facilities.includes(f.id)?"border-orange-500 bg-orange-50 dark:bg-orange-900/20":"border-gray-200 dark:border-slate-600 hover:border-orange-300"}`}>
                 <input type="checkbox" checked={form.facilities.includes(f.id)} onChange={()=>toggleFacility(f.id)} className="hidden" />
                 <span className="text-xl">{f.icon}</span>
-                <span className={`text-[10px] font-medium ${form.facilities.includes(f.id)?"text-orange-600":"text-gray-500 dark:text-gray-400"}`}>{f.label}</span>
+                <span className={`text-[10px] font-medium ${form.facilities.includes(f.id)?"text-orange-600 dark:text-orange-400":"text-gray-500 dark:text-gray-400"}`}>{f.label}</span>
               </label>
             ))}
           </div>
@@ -367,8 +347,8 @@ export default function PostRoommate() {
           )}
         </div>
 
-        {/* Message + Contact */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors">
+        {/* About + Contact */}
+        <div className={sectionCls}>
           <h2 className="font-semibold text-gray-800 dark:text-white">📞 About you</h2>
           <div>
             <label className={labelCls}>About yourself / message</label>
@@ -383,7 +363,11 @@ export default function PostRoommate() {
           </div>
         </div>
 
-        {error && <div className="bg-red-50 dark:bg-red-900/20 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-200 dark:border-red-800">⚠️ {error}</div>}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-xl border border-red-200 dark:border-red-800">
+            ⚠️ {error}
+          </div>
+        )}
 
         <button type="submit" disabled={submitting}
           className="w-full bg-orange-500 text-white py-4 rounded-2xl font-semibold text-base hover:bg-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
