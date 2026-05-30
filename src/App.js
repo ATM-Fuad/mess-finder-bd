@@ -2,31 +2,43 @@
 //  App.js — final with all contexts + routes
 // ─────────────────────────────────────────────────
 
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { AuthProvider, useAuth }   from "./contexts/AuthContext";
-import { LanguageProvider }        from "./contexts/LanguageContext";
-import { DarkModeProvider }        from "./contexts/DarkModeContext";
-import Navbar                      from "./components/Navbar";
-import BottomNav                   from "./components/BottomNav";
-import RoleSelectionModal          from "./components/RoleSelectionModal";
-import ProtectedRoute              from "./components/ProtectedRoute";
-import Home                        from "./pages/Home";
-import PostMess                    from "./pages/PostMess";
-import PostRoommate                from "./pages/PostRoommate";
-import MessDetail                  from "./pages/MessDetail";
-import RoommateDetail              from "./pages/RoommateDetail";
-import Login                       from "./pages/Login";
-import RoommateBoard               from "./pages/RoommateBoard";
-import SavedMesses                 from "./pages/SavedMesses";
-import Dashboard                   from "./pages/Dashboard";
+import { AuthProvider, useAuth }                  from "./contexts/AuthContext";
+import { LanguageProvider }                        from "./contexts/LanguageContext";
+import { DarkModeProvider, useDarkMode }           from "./contexts/DarkModeContext";
+import Navbar                                      from "./components/Navbar";
+import BottomNav                                   from "./components/BottomNav";
+import RoleSelectionModal                          from "./components/RoleSelectionModal";
+import ProtectedRoute                              from "./components/ProtectedRoute";
+import Home                                        from "./pages/Home";
+import PostMess                                    from "./pages/PostMess";
+import PostRoommate                                from "./pages/PostRoommate";
+import MessDetail                                  from "./pages/MessDetail";
+import RoommateDetail                              from "./pages/RoommateDetail";
+import Login                                       from "./pages/Login";
+import RoommateBoard                               from "./pages/RoommateBoard";
+import SavedMesses                                 from "./pages/SavedMesses";
+import Dashboard                                   from "./pages/Dashboard";
 
 function AppInner() {
   const { currentUser, userRole } = useAuth();
-  const needsRoleSelection = currentUser && userRole === null;
+  const { darkMode }              = useDarkMode();
+  const needsRoleSelection        = currentUser && userRole === null;
+
+  // ── KEY FIX: apply/remove "dark" class on <html> so all
+  //    Tailwind dark: variants activate across the whole app ──
+  useEffect(() => {
+    const root = document.documentElement;
+    if (darkMode) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+  }, [darkMode]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-200">
+    <div className="min-h-screen bg-white text-gray-900 dark:bg-slate-950 dark:text-white transition-colors duration-200">
       <Navbar />
       {needsRoleSelection && <RoleSelectionModal />}
 
