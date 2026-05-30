@@ -9,7 +9,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   collection, query, where, getDocs,
-  doc, deleteDoc, updateDoc, increment, setDoc
+  doc, deleteDoc, updateDoc, setDoc
 } from "firebase/firestore";
 import { updateProfile } from "firebase/auth";
 import { auth, db } from "../firebase";
@@ -85,7 +85,7 @@ function ListingsTab({ currentUser, userRole }) {
       } catch (err) { console.error(err); }
       finally { setLoadingData(false); }
     })();
-  }, [currentUser, userRole]);
+  }, [currentUser, userRole, isOwner]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalViews = listings.reduce((s,l) => s+(l?.views??0), 0);
   const totalWA    = listings.reduce((s,l) => s+(l?.whatsappClicks??0), 0);
@@ -110,8 +110,6 @@ function ListingsTab({ currentUser, userRole }) {
     } catch (err) { console.error(err); }
     setTogglingId(null);
   }
-
-  const inputCls = "text-xs font-medium text-gray-500 dark:text-gray-400";
 
   return (
     <>
@@ -352,7 +350,6 @@ function ProfileTab({ currentUser }) {
 // ── Main Dashboard ────────────────────────────────
 export default function Dashboard() {
   const { currentUser, userRole } = useAuth();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("listings"); // "listings" | "profile"
 
   const isOwner  = userRole === "owner";
