@@ -1,14 +1,10 @@
 // ─────────────────────────────────────────────────
-//  PostRoommate.js
+//  PostRoommate.js — photos removed (no Storage needed)
 // ─────────────────────────────────────────────────
 
 import React, { useState } from "react";
-import {
-  collection, addDoc, serverTimestamp,
-  doc, updateDoc
-} from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -62,8 +58,6 @@ export default function PostRoommate() {
     mapsURL:"", budget:"", gender:"male", personsPerRoom:"1",
     roomSize:"medium", facilities:[], message:"", contact:"",
   });
-  const [photos,     setPhotos]     = useState([]);
-  const [previews,   setPreviews]   = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState("");
   const [toast,      setToast]      = useState("");
@@ -92,18 +86,6 @@ export default function PostRoommate() {
     }));
   }
 
-  function handlePhotos(e) {
-    const files = Array.from(e.target.files).slice(0, 4);
-    setPhotos(files);
-    setPreviews(files.map(f => URL.createObjectURL(f)));
-  }
-
-  async function uploadPhoto(file, postId, i) {
-    const r = ref(storage, `roommates/${postId}/photo_${i}_${Date.now()}`);
-    await uploadBytes(r, file);
-    return getDownloadURL(r);
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -120,8 +102,7 @@ export default function PostRoommate() {
     try {
       const coords = parseGoogleMapsURL(form.mapsURL);
 
-      // ── Step 1: Write Firestore document ──
-      const docRef = await addDoc(collection(db, "roommate_requests"), {
+      await addDoc(collection(db, "roommate_requests"), {
         listingType:    form.listingType,
         division:       form.division,
         district:       form.district,
@@ -144,20 +125,6 @@ export default function PostRoommate() {
         created_at:     serverTimestamp(),
       });
 
-      // ── Step 2: Upload photos (best-effort, won't block redirect) ──
-      if (photos.length > 0) {
-        try {
-          const urls = await Promise.all(
-            photos.map((f, i) => uploadPhoto(f, docRef.id, i))
-          );
-          await updateDoc(doc(db, "roommate_requests", docRef.id), { photos: urls });
-        } catch (uploadErr) {
-          // Photo upload failed — listing is still posted, just without photos
-          console.warn("Photo upload failed (listing still saved):", uploadErr);
-        }
-      }
-
-      // ── Step 3: Unlock form, show toast, redirect ──
       setSubmitting(false);
       setToast("Ad Posted Successfully! 🎉");
       setTimeout(() => navigate("/dashboard"), 1500);
@@ -174,8 +141,8 @@ export default function PostRoommate() {
     return (
       <div className="max-w-md mx-auto text-center py-20">
         <div className="text-5xl mb-4">🚫</div>
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Access Denied</h2>
-        <p className="text-gray-500 dark:text-gray-400 mb-6">
+        <h2 className="text-xl font-bold text-gray-800  mb-2">Access Denied</h2>
+        <p className="text-gray-500  mb-6">
           Only <strong>Finders</strong> can post roommate requests.<br/>
           As an owner, use <strong>Post a Mess</strong> to list your property.
         </p>
@@ -190,8 +157,8 @@ export default function PostRoommate() {
     return (
       <div className="max-w-md mx-auto text-center py-20">
         <div className="text-5xl mb-4">🔐</div>
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Login required</h2>
-        <p className="text-gray-500 dark:text-gray-400 mb-6">Please log in to post a roommate request.</p>
+        <h2 className="text-xl font-bold text-gray-800  mb-2">Login required</h2>
+        <p className="text-gray-500  mb-6">Please log in to post a roommate request.</p>
         <button onClick={loginWithGoogle} className="bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors">
           Login with Google
         </button>
@@ -199,9 +166,9 @@ export default function PostRoommate() {
     );
   }
 
-  const inputCls   = "w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400 bg-white dark:bg-slate-700 text-gray-900 dark:text-white transition-colors";
-  const labelCls   = "text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1";
-  const sectionCls = "bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors";
+  const inputCls   = "w-full border border-gray-200  rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400 bg-white  text-gray-900  transition-colors";
+  const labelCls   = "text-xs font-medium text-gray-500  block mb-1";
+  const sectionCls = "bg-white  rounded-2xl border border-gray-100  p-5 space-y-4 transition-colors";
 
   return (
     <div className="max-w-2xl mx-auto pb-28 md:pb-8">
@@ -209,19 +176,19 @@ export default function PostRoommate() {
 
       <div className="mb-6">
         <Link to="/roommates" className="text-sm text-gray-500 hover:text-orange-500 flex items-center gap-1 mb-3">← Back to Roommate Board</Link>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Post a Roommate Listing</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Find the perfect roommate or post a sublet near you.</p>
+        <h1 className="text-2xl font-bold text-gray-900 ">Post a Roommate Listing</h1>
+        <p className="text-gray-500  text-sm mt-1">Find the perfect roommate or post a sublet near you.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* Listing type */}
         <div className={sectionCls}>
-          <h2 className="font-semibold text-gray-800 dark:text-white">📋 Listing type</h2>
+          <h2 className="font-semibold text-gray-800 ">📋 Listing type</h2>
           <div className="flex gap-3">
             {[{val:"roommate",label:"🤝 Roommate Wanted"},{val:"sublet",label:"🏠 Sublet"}].map(opt => (
               <label key={opt.val} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all text-sm font-medium
-                ${form.listingType===opt.val?"border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400":"border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300"}`}>
+                ${form.listingType===opt.val?"border-orange-500 bg-orange-50  text-orange-700 ":"border-gray-200  text-gray-600 "}`}>
                 <input type="radio" value={opt.val} checked={form.listingType===opt.val} onChange={()=>set("listingType",opt.val)} className="hidden" />
                 {opt.label}
               </label>
@@ -232,7 +199,7 @@ export default function PostRoommate() {
         {/* Location */}
         <div className={sectionCls}>
           <div>
-            <h2 className="font-semibold text-gray-800 dark:text-white">📍 Location</h2>
+            <h2 className="font-semibold text-gray-800 ">📍 Location</h2>
             <p className="text-xs text-gray-400 mt-0.5">Division → District → Area</p>
           </div>
           <div>
@@ -268,14 +235,14 @@ export default function PostRoommate() {
             <label className={labelCls}>Google Maps link <span className="text-gray-300 font-normal">(optional)</span></label>
             <input name="mapsURL" value={form.mapsURL} onChange={handleChange}
               placeholder="Paste Google Maps share link…" className={inputCls} />
-            {mapsOk && <p className="text-xs text-green-600 dark:text-green-400 mt-1">✅ Location coordinates found</p>}
+            {mapsOk && <p className="text-xs text-green-600  mt-1">✅ Location coordinates found</p>}
             <p className="text-xs text-gray-400 mt-1">📱 Google Maps → Share → Copy link</p>
           </div>
         </div>
 
         {/* Preferences */}
         <div className={sectionCls}>
-          <h2 className="font-semibold text-gray-800 dark:text-white">💰 Preferences</h2>
+          <h2 className="font-semibold text-gray-800 ">💰 Preferences</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Max budget (৳/month) *</label>
@@ -297,7 +264,7 @@ export default function PostRoommate() {
                 {["1","2","3","4","5"].map(n => (
                   <button key={n} type="button" onClick={()=>set("personsPerRoom",n)}
                     className={`flex-1 py-2 rounded-lg text-sm font-semibold border-2 transition-all
-                      ${form.personsPerRoom===n?"border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600":"border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400"}`}>
+                      ${form.personsPerRoom===n?"border-orange-500 bg-orange-50  text-orange-600":"border-gray-200  text-gray-500 "}`}>
                     {n}
                   </button>
                 ))}
@@ -309,7 +276,7 @@ export default function PostRoommate() {
                 {["small","medium","large"].map(s => (
                   <button key={s} type="button" onClick={()=>set("roomSize",s)}
                     className={`flex-1 py-2 rounded-lg text-xs font-semibold border-2 transition-all capitalize
-                      ${form.roomSize===s?"border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600":"border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400"}`}>
+                      ${form.roomSize===s?"border-orange-500 bg-orange-50  text-orange-600":"border-gray-200  text-gray-500 "}`}>
                     {s}
                   </button>
                 ))}
@@ -319,38 +286,23 @@ export default function PostRoommate() {
         </div>
 
         {/* Facilities */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 transition-colors">
-          <h2 className="font-semibold text-gray-800 dark:text-white mb-3">🏠 Facilities available</h2>
+        <div className="bg-white  rounded-2xl border border-gray-100  p-5 transition-colors">
+          <h2 className="font-semibold text-gray-800  mb-3">🏠 Facilities available</h2>
           <div className="grid grid-cols-4 gap-2">
             {FACILITIES.map(f => (
               <label key={f.id} className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 cursor-pointer text-center transition-all
-                ${form.facilities.includes(f.id)?"border-orange-500 bg-orange-50 dark:bg-orange-900/20":"border-gray-200 dark:border-slate-600 hover:border-orange-300"}`}>
+                ${form.facilities.includes(f.id)?"border-orange-500 bg-orange-50 ":"border-gray-200  hover:border-orange-300"}`}>
                 <input type="checkbox" checked={form.facilities.includes(f.id)} onChange={()=>toggleFacility(f.id)} className="hidden" />
                 <span className="text-xl">{f.icon}</span>
-                <span className={`text-[10px] font-medium ${form.facilities.includes(f.id)?"text-orange-600 dark:text-orange-400":"text-gray-500 dark:text-gray-400"}`}>{f.label}</span>
+                <span className={`text-[10px] font-medium ${form.facilities.includes(f.id)?"text-orange-600 ":"text-gray-500 "}`}>{f.label}</span>
               </label>
             ))}
           </div>
         </div>
 
-        {/* Photos */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 transition-colors">
-          <h2 className="font-semibold text-gray-800 dark:text-white mb-1">📸 Room photos <span className="text-gray-400 font-normal text-sm">(optional, up to 4)</span></h2>
-          <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-5 cursor-pointer hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all mt-3">
-            <span className="text-2xl mb-1">📷</span>
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Click to upload</span>
-            <input type="file" accept="image/*" multiple onChange={handlePhotos} className="hidden" />
-          </label>
-          {previews.length > 0 && (
-            <div className="flex gap-2 mt-3 flex-wrap">
-              {previews.map((src,i) => <img key={i} src={src} alt="" className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-slate-600" />)}
-            </div>
-          )}
-        </div>
-
         {/* About + Contact */}
         <div className={sectionCls}>
-          <h2 className="font-semibold text-gray-800 dark:text-white">📞 About you</h2>
+          <h2 className="font-semibold text-gray-800 ">📞 About you</h2>
           <div>
             <label className={labelCls}>About yourself / message</label>
             <textarea name="message" value={form.message} onChange={handleChange} rows={3}
@@ -365,14 +317,14 @@ export default function PostRoommate() {
         </div>
 
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-xl border border-red-200 dark:border-red-800">
+          <div className="bg-red-50  text-red-600  text-sm px-4 py-3 rounded-xl border border-red-200 ">
             ⚠️ {error}
           </div>
         )}
 
         <button type="submit" disabled={submitting}
           className="w-full bg-orange-500 text-white py-4 rounded-2xl font-semibold text-base hover:bg-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-          {submitting ? "Uploading & posting… ⏳" : "🤝 Post my listing"}
+          {submitting ? "Posting… ⏳" : "🤝 Post my listing"}
         </button>
       </form>
     </div>

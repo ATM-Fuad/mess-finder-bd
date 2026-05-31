@@ -1,14 +1,10 @@
 // ─────────────────────────────────────────────────
-//  PostMess.js
+//  PostMess.js — photos removed (no Storage needed)
 // ─────────────────────────────────────────────────
 
 import React, { useState } from "react";
-import {
-  collection, addDoc, serverTimestamp,
-  doc, updateDoc
-} from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -65,8 +61,6 @@ export default function PostMess() {
 
   const [mapsCoords, setMapsCoords] = useState(null);
   const [mapsError,  setMapsError]  = useState("");
-  const [photos,     setPhotos]     = useState([]);
-  const [previews,   setPreviews]   = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState("");
   const [toast,      setToast]      = useState("");
@@ -103,18 +97,6 @@ export default function PostMess() {
     }));
   }
 
-  function handlePhotos(e) {
-    const files = Array.from(e.target.files).slice(0, 5);
-    setPhotos(files);
-    setPreviews(files.map(f => URL.createObjectURL(f)));
-  }
-
-  async function uploadPhoto(file, messId, index) {
-    const fileRef = ref(storage, `messes/${messId}/photo_${index}_${Date.now()}`);
-    await uploadBytes(fileRef, file);
-    return getDownloadURL(fileRef);
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -133,8 +115,7 @@ export default function PostMess() {
       const seatsAvailable = Number(form.seats_available) || 0;
       const coords = parseGoogleMapsURL(form.mapsURL);
 
-      // ── Step 1: Write Firestore document ──
-      const docRef = await addDoc(collection(db, "messes"), {
+      await addDoc(collection(db, "messes"), {
         title:           form.name.trim(),
         name:            form.name.trim(),
         division:        form.division,
@@ -166,20 +147,6 @@ export default function PostMess() {
         created_at:      serverTimestamp(),
       });
 
-      // ── Step 2: Upload photos if any (best-effort, won't block redirect) ──
-      if (photos.length > 0) {
-        try {
-          const photoURLs = await Promise.all(
-            photos.map((file, i) => uploadPhoto(file, docRef.id, i))
-          );
-          await updateDoc(doc(db, "messes", docRef.id), { photos: photoURLs });
-        } catch (uploadErr) {
-          // Photo upload failed — listing is still posted, just without photos
-          console.warn("Photo upload failed (listing still saved):", uploadErr);
-        }
-      }
-
-      // ── Step 3: Unlock form, show toast, redirect ──
       setSubmitting(false);
       setToast("Ad Posted Successfully! 🎉");
       setTimeout(() => navigate("/dashboard"), 1500);
@@ -196,8 +163,8 @@ export default function PostMess() {
     return (
       <div className="max-w-md mx-auto text-center py-20">
         <div className="text-5xl mb-4">🚫</div>
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Access Denied</h2>
-        <p className="text-gray-500 dark:text-gray-400 mb-6">
+        <h2 className="text-xl font-bold text-gray-800  mb-2">Access Denied</h2>
+        <p className="text-gray-500  mb-6">
           Only <strong>Owners</strong> can post mess listings.<br/>
           As a finder, use <strong>Post Roommate</strong> instead.
         </p>
@@ -212,8 +179,8 @@ export default function PostMess() {
     return (
       <div className="max-w-md mx-auto text-center py-20">
         <div className="text-5xl mb-4">🔐</div>
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Login required</h2>
-        <p className="text-gray-500 dark:text-gray-400 mb-6">You need to be logged in to post a mess listing.</p>
+        <h2 className="text-xl font-bold text-gray-800  mb-2">Login required</h2>
+        <p className="text-gray-500  mb-6">You need to be logged in to post a mess listing.</p>
         <button onClick={loginWithGoogle} className="bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors">
           Login with Google
         </button>
@@ -227,15 +194,15 @@ export default function PostMess() {
 
       <div className="mb-6">
         <Link to="/" className="text-sm text-gray-500 hover:text-orange-500 flex items-center gap-1 mb-3">← Back to listings</Link>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Post a Mess Listing</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Fill in the details — anyone looking for a mess in your area will find it here.</p>
+        <h1 className="text-2xl font-bold text-gray-900 ">Post a Mess Listing</h1>
+        <p className="text-gray-500  text-sm mt-1">Fill in the details — anyone looking for a mess in your area will find it here.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* Basic Info */}
-        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors">
-          <h2 className="font-semibold text-gray-800 dark:text-white">📋 Basic information</h2>
+        <section className="bg-white  rounded-2xl border border-gray-100  p-5 space-y-4 transition-colors">
+          <h2 className="font-semibold text-gray-800 ">📋 Basic information</h2>
           <div>
             <label className="label">Mess name *</label>
             <input name="name" value={form.name} onChange={handleChange}
@@ -249,9 +216,9 @@ export default function PostMess() {
         </section>
 
         {/* Location */}
-        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors">
+        <section className="bg-white  rounded-2xl border border-gray-100  p-5 space-y-4 transition-colors">
           <div>
-            <h2 className="font-semibold text-gray-800 dark:text-white">📍 Location</h2>
+            <h2 className="font-semibold text-gray-800 ">📍 Location</h2>
             <p className="text-xs text-gray-400 mt-0.5">Division → District → Area</p>
           </div>
           <div>
@@ -291,25 +258,25 @@ export default function PostMess() {
               placeholder="Paste Google Maps share link…" className="input" />
             <p className="text-xs text-gray-400 mt-1.5">📱 Google Maps → Share → Copy link → paste here</p>
             {mapsCoords && (
-              <div className="mt-2 flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl px-3 py-2">
+              <div className="mt-2 flex items-center gap-2 bg-green-50  border border-green-200  rounded-xl px-3 py-2">
                 <span className="text-green-500 text-sm">✅</span>
-                <span className="text-xs text-green-700 dark:text-green-400 font-medium">
+                <span className="text-xs text-green-700  font-medium">
                   Location found: {mapsCoords.lat?.toFixed(5)}, {mapsCoords.lng?.toFixed(5)}
                 </span>
               </div>
             )}
             {mapsError && (
-              <div className="mt-2 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2">
+              <div className="mt-2 flex items-start gap-2 bg-amber-50  border border-amber-200  rounded-xl px-3 py-2">
                 <span className="text-amber-500 text-sm">⚠️</span>
-                <span className="text-xs text-amber-700 dark:text-amber-400">{mapsError}</span>
+                <span className="text-xs text-amber-700 ">{mapsError}</span>
               </div>
             )}
           </div>
         </section>
 
         {/* Rent & Seats */}
-        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors">
-          <h2 className="font-semibold text-gray-800 dark:text-white">💰 Rent & seats</h2>
+        <section className="bg-white  rounded-2xl border border-gray-100  p-5 space-y-4 transition-colors">
+          <h2 className="font-semibold text-gray-800 ">💰 Rent & seats</h2>
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="label">Monthly rent (৳) *</label>
@@ -332,7 +299,7 @@ export default function PostMess() {
             <div className="flex gap-3">
               {["male","female"].map(g => (
                 <label key={g} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
-                  ${form.gender===g?"border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-700":"border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300"}`}>
+                  ${form.gender===g?"border-orange-500 bg-orange-50  text-orange-700":"border-gray-200  text-gray-600 "}`}>
                   <input type="radio" name="gender" value={g} checked={form.gender===g} onChange={handleChange} className="hidden" />
                   {g==="male" ? "👨 Male" : "👩 Female"}
                 </label>
@@ -342,14 +309,14 @@ export default function PostMess() {
         </section>
 
         {/* Facilities */}
-        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 transition-colors">
-          <h2 className="font-semibold text-gray-800 dark:text-white mb-3">🏠 Facilities</h2>
+        <section className="bg-white  rounded-2xl border border-gray-100  p-5 transition-colors">
+          <h2 className="font-semibold text-gray-800  mb-3">🏠 Facilities</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {FACILITIES_LIST.map(f => (
               <label key={f.id} className={`flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all text-sm
                 ${form.facilities.includes(f.id)
-                  ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 font-medium"
-                  : "border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300"}`}>
+                  ? "border-orange-500 bg-orange-50  text-orange-700  font-medium"
+                  : "border-gray-200  text-gray-600 "}`}>
                 <input type="checkbox" checked={form.facilities.includes(f.id)}
                   onChange={() => toggleFacility(f.id)} className="hidden" />
                 <span>{f.icon}</span> {f.label}
@@ -358,28 +325,9 @@ export default function PostMess() {
           </div>
         </section>
 
-        {/* Photos */}
-        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 transition-colors">
-          <h2 className="font-semibold text-gray-800 dark:text-white mb-1">📸 Photos (up to 5)</h2>
-          <p className="text-xs text-gray-400 mb-3">Messes with photos get 4× more inquiries</p>
-          <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-6 cursor-pointer hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all">
-            <span className="text-3xl mb-2">📷</span>
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Click to upload photos</span>
-            <span className="text-xs text-gray-400 mt-1">JPG, PNG up to 5MB each</span>
-            <input type="file" accept="image/*" multiple onChange={handlePhotos} className="hidden" />
-          </label>
-          {previews.length > 0 && (
-            <div className="flex gap-2 mt-3 flex-wrap">
-              {previews.map((src,i) => (
-                <img key={i} src={src} alt="" className="w-20 h-20 object-cover rounded-lg border border-gray-200 dark:border-slate-600" />
-              ))}
-            </div>
-          )}
-        </section>
-
         {/* Contact */}
-        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4 transition-colors">
-          <h2 className="font-semibold text-gray-800 dark:text-white">📞 Contact</h2>
+        <section className="bg-white  rounded-2xl border border-gray-100  p-5 space-y-4 transition-colors">
+          <h2 className="font-semibold text-gray-800 ">📞 Contact</h2>
           <div>
             <label className="label">WhatsApp / Phone number *</label>
             <input name="contact_phone" value={form.contact_phone} onChange={handleChange}
@@ -395,14 +343,14 @@ export default function PostMess() {
         </section>
 
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-xl border border-red-200 dark:border-red-800">
+          <div className="bg-red-50  text-red-600  text-sm px-4 py-3 rounded-xl border border-red-200 ">
             ⚠️ {error}
           </div>
         )}
 
         <button type="submit" disabled={submitting}
           className="w-full bg-orange-500 text-white py-4 rounded-2xl font-semibold text-base hover:bg-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-          {submitting ? "Uploading & posting… ⏳" : "🏠 Post my mess listing"}
+          {submitting ? "Posting… ⏳" : "🏠 Post my mess listing"}
         </button>
       </form>
 
