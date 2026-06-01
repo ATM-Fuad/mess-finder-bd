@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────
-//  Navbar.js — dark mode removed
+//  Navbar.js — clean version, no dark mode
 // ─────────────────────────────────────────────────
 
 import React, { useState, useRef, useEffect } from "react";
@@ -11,12 +11,12 @@ import LogoutModal     from "./LogoutModal";
 export default function Navbar() {
   const { currentUser, userRole, loginWithGoogle, logout } = useAuth();
   const { lang, toggleLang, t } = useLanguage();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate  = useNavigate();
+  const location  = useLocation();
 
-  const [menuOpen,        setMenuOpen]        = useState(false);
-  const [mobileOpen,      setMobileOpen]      = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [menuOpen,         setMenuOpen]         = useState(false);
+  const [mobileOpen,       setMobileOpen]       = useState(false);
+  const [showLogoutModal,  setShowLogoutModal]  = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -38,8 +38,8 @@ export default function Navbar() {
     { to: "/saved",     label: `🔖 ${t("bookmarked")}` },
     { to: "/roommates", label: `🤝 ${t("findRoommate")}` },
     ...(userRole === "owner" ? [
-      { to: "/post",      label: `➕ ${t("postMess")}` },
-      { to: "/dashboard", label: `⚙️ ${t("dashboard")}` },
+      { to: "/post",          label: `➕ ${t("postMess")}` },
+      { to: "/dashboard",     label: `⚙️ ${t("dashboard")}` },
     ] : []),
     ...(userRole === "finder" ? [
       { to: "/post-roommate", label: `➕ Post Roommate` },
@@ -127,14 +127,12 @@ export default function Navbar() {
               )}
 
               {userRole === "owner" && (
-                <Link to="/post"
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm">
+                <Link to="/post" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm">
                   + {lang === "en" ? "Post" : "পোস্ট"}
                 </Link>
               )}
               {userRole === "finder" && (
-                <Link to="/post-roommate"
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm">
+                <Link to="/post-roommate" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm">
                   + Roommate
                 </Link>
               )}
@@ -159,20 +157,16 @@ export default function Navbar() {
               {navLinks.map(link => (
                 <Link key={link.to} to={link.to}
                   className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
-                    ${location.pathname === link.to
-                      ? "bg-orange-50 text-orange-600"
-                      : "text-gray-700 hover:bg-gray-50"}`}>
+                    ${location.pathname === link.to ? "bg-orange-50 text-orange-600" : "text-gray-700 hover:bg-gray-50"}`}>
                   {link.label}
                 </Link>
               ))}
               <div className="border-t border-gray-100 mt-2 pt-2">
                 {currentUser
-                  ? <button onClick={requestLogout}
-                      className="w-full text-left px-3 py-3 text-sm font-medium text-red-500">
+                  ? <button onClick={requestLogout} className="w-full text-left px-3 py-3 text-sm font-medium text-red-500">
                       🚪 {t("logout")}
                     </button>
-                  : <button onClick={handleLogin}
-                      className="w-full text-left px-3 py-3 text-sm font-medium text-gray-700">
+                  : <button onClick={handleLogin} className="w-full text-left px-3 py-3 text-sm font-medium text-gray-700">
                       🔐 {t("login")}
                     </button>
                 }
@@ -183,10 +177,7 @@ export default function Navbar() {
       </nav>
 
       {showLogoutModal && (
-        <LogoutModal
-          onConfirm={confirmLogout}
-          onCancel={() => setShowLogoutModal(false)}
-        />
+        <LogoutModal onConfirm={confirmLogout} onCancel={() => setShowLogoutModal(false)} />
       )}
     </>
   );

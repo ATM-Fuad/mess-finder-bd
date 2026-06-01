@@ -18,11 +18,11 @@ import { useAuth } from "../contexts/AuthContext";
 // ── Shared sub-components ─────────────────────────
 function StatCard({ emoji, label, value, accent }) {
   return (
-    <div className="relative bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden transition-colors">
+    <div className="relative bg-white rounded-2xl p-5 shadow-sm border border-gray-100 overflow-hidden transition-colors">
       <div className={`absolute -top-4 -right-4 w-20 h-20 rounded-full opacity-10 ${accent}`} />
       <p className="text-2xl mb-2">{emoji}</p>
-      <p className="text-3xl font-bold text-gray-900 dark:text-white">{value ?? 0}</p>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{label}</p>
+      <p className="text-3xl font-bold text-gray-900">{value ?? 0}</p>
+      <p className="text-sm text-gray-500 mt-1">{label}</p>
     </div>
   );
 }
@@ -30,13 +30,13 @@ function StatCard({ emoji, label, value, accent }) {
 function DeleteModal({ onConfirm, onCancel, deleting }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
         <p className="text-xl mb-1">🗑️</p>
-        <h2 className="font-bold text-gray-900 dark:text-white text-lg">Delete this listing?</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 mb-5">This can't be undone.</p>
+        <h2 className="font-bold text-gray-900 text-lg">Delete this listing?</h2>
+        <p className="text-gray-500 text-sm mt-1 mb-5">This can't be undone.</p>
         <div className="flex gap-3">
           <button onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium text-sm hover:bg-gray-50:bg-slate-700 transition-colors">
             Cancel
           </button>
           <button onClick={onConfirm} disabled={deleting}
@@ -53,7 +53,7 @@ function AvailToggle({ available, onChange, loading }) {
   return (
     <button onClick={onChange} disabled={loading}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200
-        ${available ? "bg-green-500" : "bg-gray-300 dark:bg-slate-600"}
+        ${available ? "bg-green-500" : "bg-gray-300"}
         ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
       <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${available?"translate-x-6":"translate-x-1"}`} />
     </button>
@@ -125,9 +125,9 @@ function ListingsTab({ currentUser, userRole }) {
       {loadingData ? (
         <div className="text-center py-16 text-gray-400">⏳ Loading…</div>
       ) : listings.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-gray-200 dark:border-slate-700 transition-colors">
+        <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200 transition-colors">
           <p className="text-4xl mb-3">📭</p>
-          <p className="font-semibold text-gray-700 dark:text-gray-300 text-lg">No listings yet</p>
+          <p className="font-semibold text-gray-700 text-lg">No listings yet</p>
           <p className="text-gray-400 text-sm mt-1 mb-5">Post your first listing to get started.</p>
           <Link to={isOwner?"/post":"/post-roommate"}
             className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors">
@@ -138,19 +138,19 @@ function ListingsTab({ currentUser, userRole }) {
         <div className="flex flex-col gap-4">
           {listings.map(item => (
             <div key={item.id}
-              className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors">
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <h3 className="font-bold text-gray-900 dark:text-white text-base truncate">
+                  <h3 className="font-bold text-gray-900 text-base truncate">
                     {item?.title || item?.name || (item?.listingType==="sublet"?"🏠 Sublet":"🤝 Roommate Wanted")}
                   </h3>
                   {isOwner && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${item?.available?"bg-green-100 text-green-700":"bg-gray-100 dark:bg-slate-700 text-gray-500"}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${item?.available?"bg-green-100 text-green-700":"bg-gray-100 text-gray-500"}`}>
                       {item?.available?"Available":"Full"}
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500">
                   📍 {[item?.area, item?.city||item?.district].filter(Boolean).join(" · ") || "Location not set"}
                 </p>
                 <div className="flex items-center gap-4 mt-2 text-xs text-gray-400 flex-wrap">
@@ -164,25 +164,25 @@ function ListingsTab({ currentUser, userRole }) {
               <div className="flex items-center gap-2 sm:flex-col sm:items-end shrink-0">
                 {isOwner && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{item?.available?"Live":"Full"}</span>
+                    <span className="text-xs text-gray-500">{item?.available?"Live":"Full"}</span>
                     <AvailToggle available={!!item?.available} onChange={()=>handleToggle(item)} loading={togglingId===item.id} />
                   </div>
                 )}
                 <div className="flex items-center gap-2">
                   {isOwner && (
                     <button onClick={()=>navigate(`/mess/${item.id}`)}
-                      className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:border-orange-300 hover:text-orange-500 font-medium transition-colors">
+                      className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-500 font-medium transition-colors">
                       👁️ View
                     </button>
                   )}
                   {isFinder && (
                     <Link to={`/roommate/${item.id}`}
-                      className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:border-orange-300 hover:text-orange-500 font-medium transition-colors">
+                      className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-500 font-medium transition-colors">
                       👁️ View
                     </Link>
                   )}
                   <button onClick={()=>setConfirmDelete(item.id)}
-                    className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:border-red-300 hover:text-red-500 font-medium transition-colors">
+                    className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-500 font-medium transition-colors">
                     🗑️ Delete
                   </button>
                 </div>
@@ -255,41 +255,41 @@ function ProfileTab({ currentUser }) {
     }
   }
 
-  const inputCls = "w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-400 bg-white dark:bg-slate-700 text-gray-900 dark:text-white transition-colors";
-  const labelCls = "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5";
+  const inputCls = "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-400 bg-white text-gray-900 transition-colors";
+  const labelCls = "block text-xs font-medium text-gray-500 mb-1.5";
 
   return (
     <div className="max-w-lg">
 
       {/* Success banner */}
       {success && (
-        <div className="mb-5 flex items-center gap-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-xl text-sm font-medium">
+        <div className="mb-5 flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm font-medium">
           <span className="text-lg">✅</span>
           Profile updated successfully!
         </div>
       )}
 
       {/* Avatar + info */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-6 mb-5 flex items-center gap-4 transition-colors">
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-5 flex items-center gap-4 transition-colors">
         <img
           src={currentUser?.photoURL || `https://ui-avatars.com/api/?name=${currentUser?.displayName??'U'}&size=80`}
           alt={currentUser?.displayName ?? "User"}
-          className="w-16 h-16 rounded-2xl border-2 border-orange-100 dark:border-slate-600 object-cover shrink-0"
+          className="w-16 h-16 rounded-2xl border-2 border-orange-100 object-cover shrink-0"
         />
         <div>
-          <h3 className="font-bold text-gray-900 dark:text-white text-lg">
+          <h3 className="font-bold text-gray-900 text-lg">
             {currentUser?.displayName ?? "No name set"}
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{currentUser?.email ?? ""}</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+          <p className="text-sm text-gray-500">{currentUser?.email ?? ""}</p>
+          <p className="text-xs text-gray-400 mt-0.5">
             Profile photo is managed by Google
           </p>
         </div>
       </div>
 
       {/* Edit form */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-6 transition-colors">
-        <h2 className="font-semibold text-gray-800 dark:text-white mb-5">✏️ Edit Profile</h2>
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 transition-colors">
+        <h2 className="font-semibold text-gray-800 mb-5">✏️ Edit Profile</h2>
         <form onSubmit={handleSave} className="space-y-4">
 
           <div>
@@ -329,7 +329,7 @@ function ProfileTab({ currentUser }) {
           </div>
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-xl border border-red-200 dark:border-red-800">
+            <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-200">
               ⚠️ {error}
             </div>
           )}
@@ -361,16 +361,16 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors pb-28 md:pb-8">
+    <div className="min-h-screen bg-gray-50 pb-28 md:pb-8">
       <div className="max-w-6xl mx-auto px-4 py-8">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-gray-900">
               {isOwner ? "⚙️ Owner Dashboard" : "🎓 My Dashboard"}
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
+            <p className="text-gray-500 text-sm mt-0.5">
               Welcome back, {currentUser?.displayName?.split(" ")[0] ?? "there"} 👋
             </p>
           </div>
@@ -379,7 +379,7 @@ export default function Dashboard() {
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-2 mb-6 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-1.5 w-fit transition-colors">
+        <div className="flex gap-2 mb-6 bg-white rounded-2xl border border-gray-100 p-1.5 w-fit transition-colors">
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -387,7 +387,7 @@ export default function Dashboard() {
               className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all
                 ${activeTab===tab.id
                   ? "bg-orange-500 text-white shadow-sm"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"}`}
+                  : "text-gray-600 hover:bg-gray-50:bg-slate-700"}`}
             >
               {tab.label}
             </button>

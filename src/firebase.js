@@ -1,20 +1,26 @@
 // ─────────────────────────────────────────────────
-//  firebase.js  –  Your Firebase connection
-// ─────────────────────────────────────────────────
+//  firebase.js  —  src/firebase.js
 //
-//  HOW TO FILL THIS IN:
-//  1. Go to console.firebase.google.com
-//  2. Open your project → Click the </> (Web) icon
-//  3. Register your app → Copy the firebaseConfig object
-//  4. Paste the values below, replacing each "REPLACE_ME"
+//  NETWORK FIX: Uses initializeFirestore with
+//  persistentLocalCache so the app loads from
+//  cache instantly if ISP routing to Google
+//  servers is slow or temporarily blocked.
 //
+//  persistentLocalCache  →  IndexedDB on browser
+//  persistentSingleTabManager → single-tab mode
+//  (safe for CRA / React 19 apps)
 // ─────────────────────────────────────────────────
 
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentSingleTabManager,
+} from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
+// ── Your Firebase project config ──────────────────
 const firebaseConfig = {
   apiKey:            "AIzaSyC6IudcK9pd9dKSVVhWifwIXDp1qXhwnqU",
   authDomain:        "mess-finder-bd-f0dd3.firebaseapp.com",
@@ -24,11 +30,33 @@ const firebaseConfig = {
   appId:             "1:514254442627:web:849ab193e99ff96bba8bb6",
 };
 
-// Initialize Firebase
-const app      = initializeApp(firebaseConfig);
+// ── Initialize Firebase app ───────────────────────
+const app = initializeApp(firebaseConfig);
 
-// Export the services your app will use
-export const db       = getFirestore(app);   // Database
-export const auth     = getAuth(app);        // Login/logout
-export const storage  = getStorage(app);     // Photo uploads
+// ── Firestore with offline persistence ───────────
+//
+//  Instead of getFirestore(app), we use
+//  initializeFirestore() with persistentLocalCache.
+//
+//  What this does:
+//  • Caches all Firestore reads in IndexedDB
+//  • App loads cached listings instantly on
+//    next visit even if Firebase is unreachable
+//  • Queued writes sync automatically when
+//    the connection restores
+//  • Zero impact on normal online usage
+//
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentSingleTabManager({
+      forceOwnership: true,  // avoids tab-lock issues in dev
+    }),
+  }),
+});
+
+// ── Auth ──────────────────────────────────────────
+export const auth          = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// ── Storage ───────────────────────────────────────
+export const storage = getStorage(app);
