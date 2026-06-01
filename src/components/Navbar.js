@@ -136,6 +136,13 @@ export default function Navbar() {
                   + Roommate
                 </Link>
               )}
+              {/* Visible login button when logged out */}
+              {!currentUser && (
+                <button onClick={handleLogin}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
+                  🔐 {t("login")}
+                </button>
+              )}
             </div>
 
             {/* Mobile right */}
@@ -166,9 +173,16 @@ export default function Navbar() {
                   ? <button onClick={requestLogout} className="w-full text-left px-3 py-3 text-sm font-medium text-red-500">
                       🚪 {t("logout")}
                     </button>
-                  : <button onClick={handleLogin} className="w-full text-left px-3 py-3 text-sm font-medium text-gray-700">
-                      🔐 {t("login")}
-                    </button>
+                  : <div className="flex flex-col gap-2 px-3 pt-1 pb-2">
+                      <button onClick={handleLogin}
+                        className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors text-center">
+                        🔐 {t("login")}
+                      </button>
+                      <Link to="/signup"
+                        className="w-full border-2 border-orange-500 text-orange-500 py-2.5 rounded-xl text-sm font-semibold transition-colors text-center">
+                        Sign up free
+                      </Link>
+                    </div>
                 }
               </div>
             </div>

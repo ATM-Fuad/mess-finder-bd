@@ -88,7 +88,7 @@ export default function Login() {
       // Sign in temporarily to resend
       const { signInWithEmailAndPassword } = await import("firebase/auth");
       const { auth } = await import("../firebase");
-      const result = await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
       await resendVerificationEmail();
       const { signOut } = await import("firebase/auth");
       await signOut(auth);

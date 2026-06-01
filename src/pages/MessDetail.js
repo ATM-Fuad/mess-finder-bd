@@ -96,10 +96,12 @@ export default function MessDetail() {
   // ── Fetch mess + reviews + saves count ──────────
   useEffect(() => {
     async function load() {
+      // Increment views silently — never block the main fetch if it fails
       try {
-        // Increment views
         await updateDoc(doc(db, "messes", id), { views: increment(1) });
+      } catch { /* old doc may not have views field — that's fine */ }
 
+      try {
         const docSnap = await getDoc(doc(db, "messes", id));
         if (docSnap.exists()) setMess({ id: docSnap.id, ...docSnap.data() });
 
