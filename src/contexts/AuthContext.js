@@ -1,106 +1,169 @@
 // ─────────────────────────────────────────────────
-//  AuthContext.js  –  Tracks who is logged in
-//  + Role system (owner / finder)
+//  AuthContext.js — with email/password auth
 // ─────────────────────────────────────────────────
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";   // ← NEW
-import { auth, db, googleProvider } from "../firebase";                       // ← added db
+import {
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  updateProfile,
+} from "firebase/auth";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db, googleProvider } from "../firebase";
 
-// 1. Create the context
 const AuthContext = createContext();
 
-// 2. Custom hook — any component can call useAuth() to get user info
 export function useAuth() {
   return useContext(AuthContext);
 }
 
-// 3. Provider — wraps your whole app in App.js
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
-  const [userRole,    setUserRole]    = useState(null);  // ← NEW: "owner" | "finder" | null
+  const [userRole,    setUserRole]    = useState(null);
   const [loading,     setLoading]     = useState(true);
 
-  // ── Sign in with Google popup ───────────────────
+  // ── Helper: create Firestore user doc ───────────
+  async function createUserDoc(user, extraData = {}) {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    if (!snap.exists()) {
+      await setDoc(doc(db, "users", user.uid), {
+        uid:       user.uid,
+        name:      user.displayName ?? extraData.name ?? "",
+        email:     user.email,
+        photoURL:  user.photoURL ?? null,
+        role:      null,
+        createdAt: serverTimestamp(),
+        ...extraData,
+      });
+      return null; // new user — no role yet
+    }
+    return snap.data().role ?? null;
+  }
+
+  // ── Google login ────────────────────────────────
   async function loginWithGoogle() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const user   = result.user;
-
-      // Check if this user already has a Firestore doc
-      const snap = await getDoc(doc(db, "users", user.uid));
-
-      if (!snap.exists()) {
-        // Brand new user → create doc with role: null (modal will ask them)
-        await setDoc(doc(db, "users", user.uid), {
-          uid:       user.uid,
-          name:      user.displayName,
-          email:     user.email,
-          photoURL:  user.photoURL,
-          role:      null,
-          createdAt: serverTimestamp(),
-        });
-        setUserRole(null); // triggers RoleSelectionModal
-      } else {
-        setUserRole(snap.data().role ?? null);
-      }
+      const role   = await createUserDoc(result.user);
+      setUserRole(role);
     } catch (error) {
-      console.error("Login error:", error.message);
+      console.error("Google login error:", error.message);
+      throw error;
     }
   }
 
-  // ── Save chosen role to Firestore ───────────────  ← NEW
+  // ── Email/password sign up ──────────────────────
+  async function signUpWithEmail(name, email, password) {
+    // 1. Create the Firebase Auth account
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    const user   = result.user;
+
+    // 2. Set display name on the Auth profile
+    await updateProfile(user, { displayName: name });
+
+    // 3. Send verification email
+    await sendEmailVerification(user);
+
+    // 4. Create Firestore doc
+    await createUserDoc(user, { name });
+
+    // Don't set role — role selection modal handles it
+    setUserRole(null);
+    return user;
+  }
+
+  // ── Email/password login ────────────────────────
+  async function loginWithEmail(email, password) {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    const user   = result.user;
+
+    // Reload to get latest emailVerified status
+    await user.reload();
+
+    if (!user.emailVerified) {
+      // Sign them out — they must verify first
+      await signOut(auth);
+      throw new Error("EMAIL_NOT_VERIFIED");
+    }
+
+    // Load role
+    try {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      setUserRole(snap.exists() ? (snap.data().role ?? null) : null);
+    } catch {
+      setUserRole(null);
+    }
+
+    return user;
+  }
+
+  // ── Resend verification email ───────────────────
+  async function resendVerificationEmail() {
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser);
+    }
+  }
+
+  // ── Password reset ──────────────────────────────
+  async function resetPassword(email) {
+    await sendPasswordResetEmail(auth, email);
+  }
+
+  // ── Save role ───────────────────────────────────
   async function saveUserRole(role) {
     if (!currentUser) return;
     await setDoc(
       doc(db, "users", currentUser.uid),
       { role },
-      { merge: true }   // only update the role field, keep everything else
+      { merge: true }
     );
     setUserRole(role);
   }
 
-  // ── Sign out ────────────────────────────────────
+  // ── Logout ──────────────────────────────────────
   async function logout() {
     try {
       await signOut(auth);
-      setUserRole(null); // ← NEW: clear role on logout
+      setUserRole(null);
     } catch (error) {
       console.error("Logout error:", error.message);
     }
   }
 
-  // ── Listen for login/logout changes automatically ──
+  // ── Auth state listener ─────────────────────────
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
-
       if (user) {
-        // Returning user — load their role from Firestore
         try {
           const snap = await getDoc(doc(db, "users", user.uid));
           setUserRole(snap.exists() ? (snap.data().role ?? null) : null);
-        } catch (err) {
-          console.error("Role fetch error:", err);
+        } catch {
           setUserRole(null);
         }
       } else {
         setUserRole(null);
       }
-
       setLoading(false);
     });
     return unsubscribe;
   }, []);
 
-  // ── Expose to the rest of the app ──────────────
   const value = {
     currentUser,
-    userRole,       // ← NEW
+    userRole,
     loginWithGoogle,
+    signUpWithEmail,
+    loginWithEmail,
+    resendVerificationEmail,
+    resetPassword,
     logout,
-    saveUserRole,   // ← NEW
+    saveUserRole,
   };
 
   return (

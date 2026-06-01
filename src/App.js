@@ -19,6 +19,7 @@ import Login                       from "./pages/Login";
 import RoommateBoard               from "./pages/RoommateBoard";
 import SavedMesses                 from "./pages/SavedMesses";
 import Dashboard                   from "./pages/Dashboard";
+import Signup                      from "./pages/Signup";
 
 function AppInner() {
   const { currentUser, userRole } = useAuth();
@@ -37,6 +38,7 @@ function AppInner() {
           <Route path="/roommates"     element={<RoommateBoard />} />
           <Route path="/roommate/:id"  element={<RoommateDetail />} />
           <Route path="/login"         element={<Login />} />
+          <Route path="/signup"        element={<Signup />} />
           <Route path="/saved"         element={<SavedMesses />} />
 
           {/* Owner only */}
