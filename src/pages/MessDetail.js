@@ -211,7 +211,9 @@ export default function MessDetail() {
     <div className="text-center py-20">
       <div className="text-4xl mb-3">😕</div>
       <h2 className="text-lg font-semibold text-gray-700">Mess not found</h2>
-      <Link to="/" className="text-orange-500 mt-2 inline-block">{t("backToListings")}</Link>
+      <button onClick={() => navigate(-1)} className="text-orange-500 mt-2 inline-block hover:underline">
+        {t("backToListings")}
+      </button>
     </div>
   );
 
@@ -224,9 +226,12 @@ export default function MessDetail() {
   return (
     <div className="max-w-3xl mx-auto pb-28 md:pb-8">
 
-      <Link to="/" className="text-sm text-gray-500 hover:text-orange-500 flex items-center gap-1 mb-4">
+      <button
+        onClick={() => navigate(-1)}
+        className="text-sm text-gray-500 hover:text-orange-500 flex items-center gap-1 mb-4"
+      >
         {t("backToListings")}
-      </Link>
+      </button>
 
       {/* ── Photo gallery ── */}
       <div className="rounded-2xl overflow-hidden mb-6 bg-gray-100">

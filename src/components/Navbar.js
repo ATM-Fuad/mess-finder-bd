@@ -9,7 +9,7 @@ import { useLanguage } from "../contexts/LanguageContext";
 import LogoutModal     from "./LogoutModal";
 
 export default function Navbar() {
-  const { currentUser, userRole, loginWithGoogle, logout } = useAuth();
+  const { currentUser, userRole, logout } = useAuth();
   const { lang, toggleLang, t } = useLanguage();
   const navigate  = useNavigate();
   const location  = useLocation();
@@ -29,7 +29,6 @@ export default function Navbar() {
 
   useEffect(() => { setMenuOpen(false); setMobileOpen(false); }, [location]);
 
-  async function handleLogin() { await loginWithGoogle(); navigate("/"); }
   function requestLogout() { setShowLogoutModal(true); }
   async function confirmLogout() { setShowLogoutModal(false); await logout(); navigate("/"); }
 
@@ -99,10 +98,16 @@ export default function Navbar() {
                             className="w-full text-left flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors">
                             🚪 {t("logout")}
                           </button>
-                        : <button onClick={handleLogin}
-                            className="w-full text-left flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors">
-                            🔐 {t("login")}
-                          </button>
+                        : <div className="flex flex-col gap-1 px-3 pb-1">
+                            <Link to="/login"
+                              className="flex items-center gap-2 px-2 py-2.5 text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-colors">
+                              🔐 Log in
+                            </Link>
+                            <Link to="/signup"
+                              className="flex items-center gap-2 px-2 py-2.5 text-sm font-semibold text-orange-500 hover:bg-orange-50 rounded-xl transition-colors">
+                              ✨ Sign up free
+                            </Link>
+                          </div>
                       }
                     </div>
                   </div>
@@ -136,12 +141,18 @@ export default function Navbar() {
                   + Roommate
                 </Link>
               )}
-              {/* Visible login button when logged out */}
+              {/* Auth buttons when logged out */}
               {!currentUser && (
-                <button onClick={handleLogin}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
-                  🔐 {t("login")}
-                </button>
+                <div className="flex items-center gap-2">
+                  <Link to="/login"
+                    className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors">
+                    Log in
+                  </Link>
+                  <Link to="/signup"
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm">
+                    Sign up free →
+                  </Link>
+                </div>
               )}
             </div>
 
@@ -174,13 +185,13 @@ export default function Navbar() {
                       🚪 {t("logout")}
                     </button>
                   : <div className="flex flex-col gap-2 px-3 pt-1 pb-2">
-                      <button onClick={handleLogin}
-                        className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors text-center">
-                        🔐 {t("login")}
-                      </button>
                       <Link to="/signup"
-                        className="w-full border-2 border-orange-500 text-orange-500 py-2.5 rounded-xl text-sm font-semibold transition-colors text-center">
-                        Sign up free
+                        className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl text-sm font-bold transition-colors text-center">
+                        Sign up free →
+                      </Link>
+                      <Link to="/login"
+                        className="w-full border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm font-medium transition-colors text-center hover:border-orange-400 hover:text-orange-500">
+                        Log in
                       </Link>
                     </div>
                 }
