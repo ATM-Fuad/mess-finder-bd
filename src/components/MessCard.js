@@ -63,7 +63,7 @@ function PhotoCarousel({ photos, name }) {
       {/* Image */}
       <img
         src={images[current]}
-        alt={`${name} photo ${current + 1}`}
+        alt={`${name} — ${current + 1}`}
         className="w-full h-full object-cover transition-opacity duration-300"
         onError={e => { e.target.src = placeholder; }}
       />
