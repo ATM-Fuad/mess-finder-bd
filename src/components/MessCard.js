@@ -63,7 +63,7 @@ function PhotoCarousel({ photos, name }) {
       {/* Image */}
       <img
         src={images[current]}
-        alt=""
+        alt={`${name} photo ${current + 1}`}
         className="w-full h-full object-cover transition-opacity duration-300"
         onError={e => { e.target.src = placeholder; }}
       />
@@ -147,6 +147,30 @@ export default function MessCard({ mess }) {
     const phone = mess.contact_phone || mess.phone;
     if (!phone) { alert("No phone number listed."); return; }
     window.location.href = `tel:${phone}`;
+  }
+
+  async function handleShare(e) {
+    e.preventDefault(); e.stopPropagation();
+    const url   = `${window.location.origin}/mess/${mess.id}`;
+    const name  = mess.title || mess.name || "Mess";
+    const area  = [mess.area, mess.city || mess.district].filter(Boolean).join(", ");
+    const text  = `🏠 ${name}${area ? ` — ${area}` : ""} | ৳${Number(mess.rent||0).toLocaleString()}/mo | MessFinder BD`;
+
+    if (navigator.share) {
+      // Native share sheet — works on mobile (WhatsApp, Facebook, etc.)
+      try {
+        await navigator.share({ title: name, text, url });
+      } catch {}
+    } else {
+      // Fallback — copy link to clipboard
+      try {
+        await navigator.clipboard.writeText(url);
+        alert("Link copied to clipboard! 📋");
+      } catch {
+        // Last resort
+        window.open(`https://wa.me/?text=${encodeURIComponent(text + "\n" + url)}`, "_blank");
+      }
+    }
   }
 
   const {
@@ -246,7 +270,22 @@ export default function MessCard({ mess }) {
             <span className="text-xl font-bold text-orange-500">৳{(rent || 0).toLocaleString()}</span>
             <span className="text-xs text-gray-400"> /month</span>
           </div>
-          <span className="text-sm text-orange-500 font-medium">View details →</span>
+          <div className="flex items-center gap-2">
+            {/* Share button */}
+            <button
+              onClick={handleShare}
+              title="Share this mess"
+              className="flex items-center gap-1 text-xs text-gray-400 hover:text-orange-500 transition-colors px-2 py-1 rounded-lg hover:bg-orange-50"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                <polyline points="16 6 12 2 8 6"/>
+                <line x1="12" y1="2" x2="12" y2="15"/>
+              </svg>
+              Share
+            </button>
+            <span className="text-sm text-orange-500 font-medium">View details →</span>
+          </div>
         </div>
       </div>
     </Link>
