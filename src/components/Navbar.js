@@ -7,6 +7,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth }     from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import LogoutModal     from "./LogoutModal";
+import NotificationBell from "./NotificationBell";
 
 export default function Navbar() {
   const { currentUser, userRole, logout } = useAuth();
@@ -71,6 +72,9 @@ export default function Navbar() {
                 <span className="text-gray-300">|</span>
                 <span className="text-gray-400">{lang === "en" ? "বাংলা" : "EN"}</span>
               </button>
+
+              {/* Notification bell */}
+              <NotificationBell />
 
               {/* Menu dropdown */}
               <div ref={menuRef} className="relative">
@@ -207,3 +211,4 @@ export default function Navbar() {
     </>
   );
 }
+

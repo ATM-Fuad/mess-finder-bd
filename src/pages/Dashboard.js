@@ -9,7 +9,8 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   collection, query, where, getDocs,
-  doc, deleteDoc, updateDoc, setDoc
+  doc, deleteDoc, updateDoc, setDoc,
+  serverTimestamp
 } from "firebase/firestore";
 import { updateProfile } from "firebase/auth";
 import { auth, db } from "../firebase";
@@ -105,8 +106,41 @@ function ListingsTab({ currentUser, userRole }) {
     setTogglingId(listing.id);
     const newVal = !listing.available;
     try {
-      await updateDoc(doc(db, "messes", listing.id), { available:newVal });
-      setListings(prev => prev.map(l => l.id===listing.id?{...l,available:newVal}:l));
+      await updateDoc(doc(db, "messes", listing.id), { available: newVal });
+      setListings(prev => prev.map(l => l.id === listing.id ? { ...l, available: newVal } : l));
+
+      // ── Notify all watchers when mess becomes available ──
+      if (newVal === true) {
+        try {
+          // Get all user notification docs then check each for this mess
+          const watchersSnap = await getDocs(
+            collection(db, "notifications")
+          );
+
+          // For each user doc, check their alerts subcollection
+          const notifyPromises = [];
+          for (const userDoc of watchersSnap.docs) {
+            const alertRef = doc(
+              db, "notifications", userDoc.id, "alerts", listing.id
+            );
+            const { getDoc } = await import("firebase/firestore");
+            const alertSnap = await getDoc(alertRef);
+            if (alertSnap.exists() && alertSnap.data().status === "waiting") {
+              notifyPromises.push(
+                updateDoc(alertRef, {
+                  status:     "notified",
+                  seen:       false,
+                  notifiedAt: serverTimestamp(),
+                })
+              );
+            }
+          }
+          await Promise.all(notifyPromises);
+        } catch (notifyErr) {
+          console.error("Notification trigger error:", notifyErr);
+          // Non-critical — don't block the toggle
+        }
+      }
     } catch (err) { console.error(err); }
     setTogglingId(null);
   }

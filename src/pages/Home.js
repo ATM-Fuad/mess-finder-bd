@@ -9,6 +9,7 @@ import { useSearchParams } from "react-router-dom";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import MessCard from "../components/MessCard";
+import RecentlyViewed from "../components/RecentlyViewed";
 
 const LOCATIONS = {
   "Dhaka":      { "Dhaka City":["Mirpur","Farmgate","Bashundhara","Uttara","Mohammadpur","Dhanmondi","Badda","Mohakhali","Tejgaon","Rampura","Banasree","Khilgaon"],"Savar":["Jahangirnagar","Ashulia","Hemayetpur","Savar Bazar"],"Gazipur":["Board Bazar","Tongi","Chowrasta","Joydebpur"],"Narayanganj":["Siddhirganj","Fatullah","Rupganj"] },
@@ -144,6 +145,9 @@ export default function Home() {
           />
         </div>
       </div>
+
+      {/* Recently Viewed strip — shows only if user has history */}
+      <RecentlyViewed />
 
       {/* Filter bar */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
