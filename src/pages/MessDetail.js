@@ -99,6 +99,15 @@ export default function MessDetail() {
   const [reportReason, setReportReason] = useState("");
   const [reportSent,   setReportSent]   = useState({});
 
+  // ── Q&A state ──────────────────────────────────
+  const [questions,    setQuestions]    = useState([]);
+  const [myQuestion,   setMyQuestion]   = useState("");
+  const [postingQ,     setPostingQ]     = useState(false);
+  const [answerMap,    setAnswerMap]    = useState({}); // qId → answer text being typed
+  const [postingAns,   setPostingAns]   = useState({}); // qId → bool loading
+  const [editingAns,   setEditingAns]   = useState({}); // qId → edited text (null = not editing)
+  const [savingEdit,   setSavingEdit]   = useState({}); // qId → bool
+
   // Plan 2: notification state
   const [isWatching,    setIsWatching]    = useState(false);
   const [watchLoading,  setWatchLoading]  = useState(false);
@@ -121,6 +130,14 @@ export default function MessDetail() {
         const revs = reviewSnap.docs.map(d => ({ id:d.id, ...d.data() }));
         revs.sort((a, b) => (b.helpfulCount||0) - (a.helpfulCount||0));
         setReviews(revs);
+
+        // Fetch Q&A questions
+        try {
+          const qSnap = await getDocs(collection(db, "messes", id, "questions"));
+          const qData = qSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          qData.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
+          setQuestions(qData);
+        } catch { setQuestions([]); }
 
         try {
           const savesSnap = await getCountFromServer(collection(db, "messes", id, "saves"));
@@ -204,6 +221,115 @@ export default function MessDetail() {
       setReportingId(null);
       setReportReason("");
     } catch (err) { console.error(err); }
+  }
+
+  // ── Post a question ────────────────────────────
+  async function submitQuestion(e) {
+    e.preventDefault();
+    if (!currentUser) { navigate("/login"); return; }
+    if (!myQuestion.trim()) return;
+    setPostingQ(true);
+    try {
+      const qRef = await addDoc(collection(db, "messes", id, "questions"), {
+        question:    myQuestion.trim(),
+        askedBy:     currentUser.uid,
+        askerName:   currentUser.displayName ?? "Anonymous",
+        askerPhoto:  currentUser.photoURL ?? null,
+        answers:     [],
+        createdAt:   serverTimestamp(),
+      });
+      setQuestions(prev => [{
+        id: qRef.id,
+        question: myQuestion.trim(),
+        askedBy: currentUser.uid,
+        askerName: currentUser.displayName ?? "Anonymous",
+        askerPhoto: currentUser.photoURL ?? null,
+        answers: [],
+        createdAt: { seconds: Date.now() / 1000 },
+      }, ...prev]);
+      setMyQuestion("");
+    } catch (err) { console.error("submitQuestion:", err); }
+    setPostingQ(false);
+  }
+
+  // ── Post an answer ─────────────────────────────
+  async function submitAnswer(qId) {
+    const answer = answerMap[qId]?.trim();
+    if (!answer || !currentUser) return;
+    setPostingAns(prev => ({ ...prev, [qId]: true }));
+    try {
+      const qRef = doc(db, "messes", id, "questions", qId);
+      const newAnswer = {
+        text:        answer,
+        answeredBy:  currentUser.uid,
+        answererName:currentUser.displayName ?? "Anonymous",
+        answererPhoto:currentUser.photoURL ?? null,
+        isOwner:     currentUser.uid === (mess?.ownerId ?? mess?.owner_id),
+        createdAt:   new Date().toISOString(),
+      };
+      // Store answers as array inside the question document
+      const snap = await getDoc(qRef);
+      const existing = snap.data()?.answers ?? [];
+      await updateDoc(qRef, { answers: [...existing, newAnswer] });
+      setQuestions(prev => prev.map(q =>
+        q.id === qId
+          ? { ...q, answers: [...(q.answers ?? []), newAnswer] }
+          : q
+      ));
+      setAnswerMap(prev => ({ ...prev, [qId]: "" }));
+    } catch (err) { console.error("submitAnswer:", err); }
+    setPostingAns(prev => ({ ...prev, [qId]: false }));
+  }
+
+  // ── Edit owner's answer ────────────────────────
+  async function saveEditedAnswer(qId) {
+    const newText = editingAns[qId]?.trim();
+    if (!newText) return;
+    setSavingEdit(prev => ({ ...prev, [qId]: true }));
+    try {
+      const qRef  = doc(db, "messes", id, "questions", qId);
+      const snap  = await getDoc(qRef);
+      const answers = (snap.data()?.answers ?? []).map(a =>
+        a.answeredBy === currentUser.uid ? { ...a, text: newText } : a
+      );
+      await updateDoc(qRef, { answers });
+      setQuestions(prev => prev.map(q =>
+        q.id === qId
+          ? { ...q, answers: q.answers.map(a =>
+              a.answeredBy === currentUser.uid ? { ...a, text: newText } : a
+            )}
+          : q
+      ));
+      setEditingAns(prev => ({ ...prev, [qId]: null }));
+    } catch (err) { console.error("saveEditedAnswer:", err); }
+    setSavingEdit(prev => ({ ...prev, [qId]: false }));
+  }
+
+  // ── Delete owner's answer ──────────────────────
+  async function deleteAnswer(qId) {
+    if (!window.confirm("Delete your answer?")) return;
+    try {
+      const qRef  = doc(db, "messes", id, "questions", qId);
+      const snap  = await getDoc(qRef);
+      const answers = (snap.data()?.answers ?? []).filter(
+        a => a.answeredBy !== currentUser.uid
+      );
+      await updateDoc(qRef, { answers });
+      setQuestions(prev => prev.map(q =>
+        q.id === qId
+          ? { ...q, answers: q.answers.filter(a => a.answeredBy !== currentUser.uid) }
+          : q
+      ));
+    } catch (err) { console.error("deleteAnswer:", err); }
+  }
+
+  // ── Delete entire question (owner only) ────────
+  async function deleteQuestion(qId) {
+    if (!window.confirm("Delete this question and all its answers?")) return;
+    try {
+      await deleteDoc(doc(db, "messes", id, "questions", qId));
+      setQuestions(prev => prev.filter(q => q.id !== qId));
+    } catch (err) { console.error("deleteQuestion:", err); }
   }
 
   // ── Submit review ────────────────────────────────
@@ -617,8 +743,8 @@ export default function MessDetail() {
           <p className="text-gray-400 text-sm mb-6">{t("noReviews")}</p>
         )}
 
-        {/* Write review form */}
-        {currentUser ? (
+        {/* Write review form — hidden from owners */}
+        {currentUser && !isOwner ? (
           <form onSubmit={submitReview} className="border-t border-gray-100 pt-5">
             <h3 className="text-sm font-semibold text-gray-700 mb-1">{t("writeReview")}</h3>
             <p className="text-xs text-gray-400 mb-4">Your honest experience helps other students.</p>
@@ -653,12 +779,189 @@ export default function MessDetail() {
               {submitting ? t("submitting") : t("submitReview")}
             </button>
           </form>
+        ) : currentUser && isOwner ? (
+          <p className="text-sm text-gray-400 border-t border-gray-100 pt-4">
+            Owners cannot review their own mess.
+          </p>
         ) : (
           <p className="text-sm text-gray-500 border-t border-gray-100 pt-4">
             <Link to="/login" className="text-orange-500 font-medium">Login</Link> {t("loginToReview")}
           </p>
         )}
       </div>
+
+      {/* ── Q&A Section ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-5">
+        <h2 className="font-semibold text-gray-800 mb-1">❓ Questions & Answers</h2>
+        <p className="text-xs text-gray-400 mb-5">
+          Ask anything about this mess — the owner will answer.
+        </p>
+
+        {/* Existing questions */}
+        {questions.length > 0 ? (
+          <div className="space-y-5 mb-6">
+            {questions.map(q => (
+              <div key={q.id} className="border border-gray-100 rounded-2xl p-4">
+
+                {/* Question row */}
+                <div className="flex items-start gap-3 mb-3">
+                  <img
+                    src={q.askerPhoto || `https://ui-avatars.com/api/?name=${q.askerName ?? "U"}`}
+                    alt={q.askerName}
+                    className="w-7 h-7 rounded-full shrink-0 mt-0.5"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-gray-700">{q.askerName ?? "Anonymous"}</span>
+                        <span className="text-[10px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full font-medium">Question</span>
+                      </div>
+                      {/* Owner: delete question */}
+                      {isOwner && (
+                        <button
+                          onClick={() => deleteQuestion(q.id)}
+                          className="text-[10px] text-gray-300 hover:text-red-400 transition-colors font-medium px-1.5 py-0.5 rounded"
+                          title="Delete this question"
+                        >
+                          🗑️ Delete
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-800 mt-1 leading-relaxed">{q.question}</p>
+                  </div>
+                </div>
+
+                {/* Answers */}
+                {(q.answers ?? []).length > 0 && (
+                  <div className="ml-10 space-y-3 mb-3">
+                    {q.answers.map((ans, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <img
+                          src={ans.answererPhoto || `https://ui-avatars.com/api/?name=${ans.answererName ?? "U"}`}
+                          alt={ans.answererName}
+                          className="w-6 h-6 rounded-full shrink-0 mt-0.5"
+                        />
+                        <div className="flex-1 bg-orange-50 rounded-xl px-3 py-2">
+                          <div className="flex items-center justify-between gap-2 mb-0.5 flex-wrap">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-semibold text-gray-700">{ans.answererName ?? "Anonymous"}</span>
+                              {ans.isOwner && (
+                                <span className="text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-full font-bold">Owner</span>
+                              )}
+                            </div>
+                            {/* Owner: edit + delete answer buttons */}
+                            {isOwner && ans.answeredBy === currentUser?.uid && (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => setEditingAns(prev => ({
+                                    ...prev,
+                                    [q.id]: prev[q.id] === null || prev[q.id] === undefined ? ans.text : null
+                                  }))}
+                                  className="text-[10px] text-orange-400 hover:text-orange-600 font-medium transition-colors"
+                                >
+                                  ✏️ Edit
+                                </button>
+                                <button
+                                  onClick={() => deleteAnswer(q.id)}
+                                  className="text-[10px] text-gray-300 hover:text-red-400 font-medium transition-colors"
+                                >
+                                  🗑️ Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Inline edit mode */}
+                          {isOwner && editingAns[q.id] !== null && editingAns[q.id] !== undefined && ans.answeredBy === currentUser?.uid ? (
+                            <div className="mt-1 flex gap-2">
+                              <input
+                                type="text"
+                                value={editingAns[q.id]}
+                                onChange={e => setEditingAns(prev => ({ ...prev, [q.id]: e.target.value }))}
+                                className="flex-1 border border-orange-300 rounded-lg px-2 py-1 text-xs outline-none focus:border-orange-500 bg-white"
+                                autoFocus
+                                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); saveEditedAnswer(q.id); } }}
+                              />
+                              <button
+                                onClick={() => saveEditedAnswer(q.id)}
+                                disabled={!editingAns[q.id]?.trim() || savingEdit[q.id]}
+                                className="bg-orange-500 hover:bg-orange-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                {savingEdit[q.id] ? "…" : "Save"}
+                              </button>
+                              <button
+                                onClick={() => setEditingAns(prev => ({ ...prev, [q.id]: null }))}
+                                className="text-gray-400 hover:text-gray-600 text-[10px] px-1"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-700 leading-relaxed">{ans.text}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Answer input — owner only */}
+                {currentUser && currentUser.uid === (mess?.ownerId ?? mess?.owner_id) && (
+                  <div className="ml-10 flex gap-2 mt-2">
+                    <input
+                      type="text"
+                      value={answerMap[q.id] ?? ""}
+                      onChange={e => setAnswerMap(prev => ({ ...prev, [q.id]: e.target.value }))}
+                      placeholder="Write your answer as the owner…"
+                      className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-xs outline-none focus:border-orange-400 transition-colors"
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); submitAnswer(q.id); } }}
+                    />
+                    <button
+                      onClick={() => submitAnswer(q.id)}
+                      disabled={!answerMap[q.id]?.trim() || postingAns[q.id]}
+                      className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors disabled:opacity-50"
+                    >
+                      {postingAns[q.id] ? "…" : "Answer"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 mb-5">
+            No questions yet — be the first to ask!
+          </p>
+        )}
+
+        {/* Ask a question — non-owners only */}
+        {currentUser && !isOwner ? (
+          <form onSubmit={submitQuestion} className="border-t border-gray-100 pt-4">
+            <p className="text-xs font-semibold text-gray-600 mb-2">Ask a question</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={myQuestion}
+                onChange={e => setMyQuestion(e.target.value)}
+                placeholder="e.g. Is parking available? Is gas included in rent?"
+                className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={!myQuestion.trim() || postingQ}
+                className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {postingQ ? "Posting…" : "Ask →"}
+              </button>
+            </div>
+          </form>
+        ) : !currentUser ? (
+          <p className="text-sm text-gray-500 border-t border-gray-100 pt-4">
+            <Link to="/login" className="text-orange-500 font-medium">Login</Link> to ask a question.
+          </p>
+        ) : null}
+      </div>
+
     </div>
   );
 }
