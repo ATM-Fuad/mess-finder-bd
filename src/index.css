@@ -1,3 +1,158 @@
+/* ─────────────────────────────────────────────────
+   index.css  —  MessFinder BD Global Styles
+   Phase 1 Foundation
+   ───────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── CSS Variables ────────────────────────────── */
+:root {
+  --base:        #FAFAF8;
+  --surface:     #FFFFFF;
+  --border:      #E8E8E4;
+  --orange:      #F97316;
+  --orange-dark: #EA580C;
+  --text:        #1A1A1A;
+  --muted:       #6B7280;
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-hover:0 8px 24px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* ── Base ─────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Plus Jakarta Sans', 'Hind Siliguri', -apple-system, sans-serif;
+  background-color: var(--base);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+/* ── Bangla text ──────────────────────────────── */
+.bangla {
+  font-family: 'Hind Siliguri', 'Plus Jakarta Sans', sans-serif;
+  line-height: 1.8;
+  letter-spacing: 0.01em;
+}
+
+/* ── Tap highlight removal ────────────────────── */
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Button press effect ──────────────────────── */
+button:not(:disabled) {
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+button:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+/* ── Page fade-in ─────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+.animate-fade-in {
+  animation: fadeInUp 0.3s ease both;
+}
+
+/* ── Skeleton shimmer ─────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position:  800px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #EEEEE8 25%, #E4E4DE 37%, #EEEEE8 63%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 0.5rem;
+}
+
+/* ── Glassmorphism ────────────────────────────── */
+.glass {
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.45);
+}
+
+/* ── Frosted navbar (applied via JS on scroll) ── */
+.navbar-scrolled {
+  background: rgba(250,250,248,0.88) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  box-shadow: 0 1px 20px rgba(0,0,0,0.06) !important;
+}
+
+/* ── Photo gradient overlay ───────────────────── */
+.photo-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.75) 0%,
+    rgba(0,0,0,0.25) 55%,
+    transparent 100%
+  );
+}
+
+/* ── Gender badge gradients ───────────────────── */
+.badge-male   { background: linear-gradient(135deg,#DBEAFE,#BFDBFE); color:#1D4ED8; }
+.badge-female { background: linear-gradient(135deg,#FCE7F3,#FBCFE8); color:#BE185D; }
+.badge-mixed  { background: linear-gradient(135deg,#EDE9FE,#DDD6FE); color:#6D28D9; }
+
+/* ── New listing badge ────────────────────────── */
+.badge-new {
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+/* ── Input focus ring ─────────────────────────── */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.14);
+  border-color: #F97316 !important;
+}
+
+/* ── Scrollbar ────────────────────────────────── */
+.scrollbar-hide               { -ms-overflow-style:none; scrollbar-width:none; }
+.scrollbar-hide::-webkit-scrollbar { display:none; }
+
+/* ── Safe area for bottom nav ─────────────────── */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Minimum tap targets ──────────────────────── */
+.tap-target {
+  min-height: 44px;
+  min-width:  44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Hero gradient ────────────────────────────── */
+.hero-gradient {
+  background: linear-gradient(135deg, #F97316 0%, #EA580C 55%, #C2410C 100%);
+}
+
+/* ── Counter animation ────────────────────────── */
+@keyframes countUp {
+  from { opacity:0; transform:translateY(6px); }
+  to   { opacity:1; transform:translateY(0);   }
+}
+.count-animate { animation: countUp 0.5s ease both; }

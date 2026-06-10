@@ -21,6 +21,7 @@ import SavedMesses                 from "./pages/SavedMesses";
 import Dashboard                   from "./pages/Dashboard";
 import Signup                      from "./pages/Signup";
 import Notifications               from "./pages/Notifications";
+import Compare                     from "./pages/Compare";
 
 function AppInner() {
   const { currentUser, userRole } = useAuth();
@@ -41,6 +42,7 @@ function AppInner() {
           <Route path="/login"         element={<Login />} />
           <Route path="/signup"        element={<Signup />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/compare"       element={<Compare />} />
           <Route path="/saved"         element={<SavedMesses />} />
 
           {/* Owner only */}

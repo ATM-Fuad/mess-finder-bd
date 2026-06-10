@@ -5,11 +5,12 @@
 // ─────────────────────────────────────────────────
 
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import MessCard from "../components/MessCard";
 import RecentlyViewed from "../components/RecentlyViewed";
+import { normalizeSearch, isBangla } from "../utils/banglaMap";
 
 const LOCATIONS = {
   "Dhaka":      { "Dhaka City":["Mirpur","Farmgate","Bashundhara","Uttara","Mohammadpur","Dhanmondi","Badda","Mohakhali","Tejgaon","Rampura","Banasree","Khilgaon"],"Savar":["Jahangirnagar","Ashulia","Hemayetpur","Savar Bazar"],"Gazipur":["Board Bazar","Tongi","Chowrasta","Joydebpur"],"Narayanganj":["Siddhirganj","Fatullah","Rupganj"] },
@@ -95,15 +96,22 @@ export default function Home() {
   const districts = selectedDivision ? Object.keys(LOCATIONS[selectedDivision] ?? {}) : [];
   const areas     = selectedDistrict ? (LOCATIONS[selectedDivision]?.[selectedDistrict] ?? []) : [];
 
-  // Filter logic
+  // Filter logic — supports both Bangla and English search
   const filteredMesses = messes.filter(mess => {
-    const q = searchQuery.toLowerCase();
-    const matchesSearch = !q ||
-      (mess.title?.toLowerCase().includes(q))  ||
-      (mess.name?.toLowerCase().includes(q))   ||
-      (mess.area?.toLowerCase().includes(q))   ||
-      (mess.city?.toLowerCase().includes(q))   ||
-      (mess.district?.toLowerCase().includes(q));
+    // Build list of all terms this query could match
+    const searchTerms = normalizeSearch(searchQuery);
+
+    const matchesSearch = !searchQuery.trim() || searchTerms.some(term => {
+      const t = term.toLowerCase();
+      return (
+        mess.title?.toLowerCase().includes(t)    ||
+        mess.name?.toLowerCase().includes(t)     ||
+        mess.area?.toLowerCase().includes(t)     ||
+        mess.city?.toLowerCase().includes(t)     ||
+        mess.district?.toLowerCase().includes(t) ||
+        mess.division?.toLowerCase().includes(t)
+      );
+    });
 
     const matchesDivision = !selectedDivision || mess.division === selectedDivision;
     const matchesDistrict = !selectedDistrict ||
@@ -140,9 +148,16 @@ export default function Home() {
             type="text"
             value={searchQuery}
             onChange={e => setParam("q", e.target.value)}
-            placeholder="Search by mess name, city, or area…"
+            placeholder="Search by mess name, city, or area… বাংলায় লিখুন"
             className="w-full bg-white text-gray-900 rounded-xl py-4 pl-12 pr-4 outline-none focus:ring-4 focus:ring-orange-300 transition-all shadow-sm"
           />
+          {/* Bangla detection hint */}
+          {isBangla(searchQuery) && (
+            <p className="text-orange-100 text-xs mt-2">
+              🔍 বাংলা অনুসন্ধান সক্রিয় — ইংরেজি ডেটার সাথে মিলিয়ে দেখা হচ্ছে
+              <span className="opacity-70"> (Searching Bangla against English data)</span>
+            </p>
+          )}
         </div>
       </div>
 
@@ -195,16 +210,22 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Result count + clear */}
+      {/* Result count + clear + compare link */}
       <div className="mb-4 flex items-center justify-between text-sm">
         <span className="text-gray-500">
           <span className="text-orange-500 font-bold">{filteredMesses.length}</span> messes found
         </span>
-        {hasActiveFilters && (
-          <button onClick={clearAll} className="text-gray-400 hover:text-red-500 transition-colors text-xs font-medium">
-            Clear all filters ✕
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          <Link to="/compare"
+            className="flex items-center gap-1.5 text-xs font-semibold text-orange-500 hover:text-orange-600 border border-orange-200 hover:border-orange-400 px-3 py-1.5 rounded-xl transition-all">
+            ⚖️ Compare
+          </Link>
+          {hasActiveFilters && (
+            <button onClick={clearAll} className="text-gray-400 hover:text-red-500 transition-colors text-xs font-medium">
+              Clear all filters ✕
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Grid */}

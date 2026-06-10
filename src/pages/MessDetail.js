@@ -627,7 +627,7 @@ export default function MessDetail() {
           </a>
           {mess.contact_phone && (
             <a href={`tel:${mess.contact_phone}`}
-              className="inline-flex items-center gap-2 bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-orange-700 transition-colors text-sm border border-orange-400">
+              className="inline-flex items-center gap-2 bg-white text-green-600 font-semibold px-5 py-2.5 rounded-xl hover:bg-green-50 transition-colors text-sm border-2 border-green-400">
               {t("callOwner")}
             </a>
           )}
