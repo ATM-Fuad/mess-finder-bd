@@ -76,7 +76,7 @@ export default function Navbar() {
   ];
 
   const navBg = scrolled
-    ? "navbar-scrolled"
+    ? "bg-white border-b border-[#E8E8E4] shadow-[0_2px_16px_rgba(0,0,0,0.08)]"
     : "bg-white border-b border-[#E8E8E4]";
 
   return (

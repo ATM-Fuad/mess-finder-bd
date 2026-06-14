@@ -1,9 +1,8 @@
 /* ─────────────────────────────────────────────────
    index.css  —  MessFinder BD Global Styles
    Phase 1 Foundation
+   Font loaded via public/index.html <link> tag
    ───────────────────────────────────────────────── */
-
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
