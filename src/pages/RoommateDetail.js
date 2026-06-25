@@ -204,7 +204,7 @@ export default function RoommateDetail() {
           </a>
           {post?.contact && (
             <a href={`tel:${post.contact}`}
-              className="inline-flex items-center gap-2 bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-orange-700 transition-colors text-sm border border-orange-400">
+              className="inline-flex items-center gap-2 bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors text-sm border border-orange-400">
               📞 Call
             </a>
           )}
